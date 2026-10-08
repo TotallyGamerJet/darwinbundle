@@ -36,6 +36,7 @@ package bom
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 )
 
 // magic is the first eight bytes of every BOM file.
@@ -65,6 +66,13 @@ const nodeHeaderSize = 12
 
 // pairSize is one entry in a tree node: two block numbers.
 const pairSize = 8
+
+// The page sizes AddTree accepts. See the checks there for why each bound
+// exists.
+const (
+	minBlockSize = nodeHeaderSize + 2*pairSize
+	maxBlockSize = nodeHeaderSize + math.MaxUint16*pairSize
+)
 
 // BlockID identifies a block within the container. Zero is the null block: it
 // is always present, always empty, and is what an absent reference points at.

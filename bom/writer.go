@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 	"sort"
 )
 
@@ -85,8 +86,18 @@ func (w *Writer) SetVariable(name string, id BlockID) error {
 // consumer wants something else. CoreUI, for instance, pages its bitmap-key
 // tree at 1024.
 func (w *Writer) AddTree(name string, blockSize uint32, entries []TreeEntry) error {
-	if blockSize < nodeHeaderSize+pairSize {
-		return fmt.Errorf("bom: block size %d is too small to hold a single entry", blockSize)
+	// A page has to hold at least two pairs. With one, an internal level has
+	// exactly as many nodes as the level beneath it and the tree can never
+	// reach a single root. At the other end a node records its entry count in
+	// sixteen bits, so a page that could hold more would write a count that
+	// wrapped and a tree that reads back wrong without any error.
+	if blockSize < minBlockSize {
+		return fmt.Errorf("bom: block size %d is too small: a page must hold at least two entries (%d bytes)",
+			blockSize, minBlockSize)
+	}
+	if blockSize > maxBlockSize {
+		return fmt.Errorf("bom: block size %d is too large: a page records its entry count in 16 bits, so %d bytes is the most it can use",
+			blockSize, maxBlockSize)
 	}
 
 	sorted := make([]TreeEntry, len(entries))
@@ -313,6 +324,12 @@ func (w *Writer) WriteTo(out io.Writer) (int64, error) {
 		if i == int(NullBlock) {
 			continue // address 0, length 0
 		}
+		// Every offset and length in the file is 32-bit. Past 4 GiB they would
+		// wrap and the container would be written, and be wrong, without any
+		// error; no asset catalog is within orders of magnitude of this.
+		if uint64(blockDataStart)+uint64(body.Len())+uint64(len(b)) > math.MaxUint32 {
+			return 0, fmt.Errorf("bom: the container would exceed 4 GiB, which the format cannot address")
+		}
 		pointers[i] = pointer{
 			address: uint32(blockDataStart + body.Len() - (blockDataStart - headerSize)),
 			length:  uint32(len(b)),
@@ -322,8 +339,8 @@ func (w *Writer) WriteTo(out io.Writer) (int64, error) {
 
 	// The variable list and the index are appended by hand rather than through
 	// binary.Write. Writing to a bytes.Buffer cannot fail, so every call would
-	// return an error that exists only to be discarded — and this project does
-	// not discard errors. Appending to a slice creates none to begin with.
+	// return an error that exists only to be discarded. Appending to a slice
+	// creates none to begin with.
 	varsOffset := uint32(headerSize + body.Len())
 	vars := be32(nil, uint32(len(w.vars)))
 	for _, v := range w.vars {

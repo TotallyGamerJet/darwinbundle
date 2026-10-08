@@ -236,3 +236,31 @@ func TestGarbageIsRejected(t *testing.T) {
 		}
 	}
 }
+
+// The smallest and largest page AddTree accepts: a 12-byte node header plus two
+// 8-byte pairs, and the same header plus 65535 pairs, the most a 16-bit count
+// can describe.
+const (
+	minPage = 12 + 2*8
+	maxPage = 12 + 65535*8
+)
+
+// TestAddTreeRefusesPagesItCannotUse. A page that holds one pair can never
+// reduce a level to a single root, and one that holds more than 65535 cannot
+// record its own count. Both used to be accepted — the first failed with an
+// obscure message after building the leaves, the second wrote a wrapped count
+// and read back wrong with no error at all.
+func TestAddTreeRefusesPagesItCannotUse(t *testing.T) {
+	for _, size := range []uint32{0, 8, 20, minPage - 1, maxPage + 1, 1 << 24} {
+		w := bom.NewWriter()
+		if err := w.AddTree("T", size, entries(3)); err == nil {
+			t.Errorf("block size %d was accepted", size)
+		}
+	}
+	for _, size := range []uint32{minPage, maxPage} {
+		w := bom.NewWriter()
+		if err := w.AddTree("T", size, entries(3)); err != nil {
+			t.Errorf("block size %d was refused: %v", size, err)
+		}
+	}
+}
