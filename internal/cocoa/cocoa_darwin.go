@@ -52,9 +52,6 @@ func Load() error {
 // Selectors used often enough that caching them avoids hashing the name in the
 // runtime on every message send.
 var (
-	selAlloc          = objc.RegisterName("alloc")
-	selInit           = objc.RegisterName("init")
-	selRetain         = objc.RegisterName("retain")
 	selRelease        = objc.RegisterName("release")
 	selAutorelease    = objc.RegisterName("autorelease")
 	selStringWithUTF8 = objc.RegisterName("stringWithUTF8String:")

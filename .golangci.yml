@@ -1,0 +1,48 @@
+version: "2"
+
+run:
+  # Files for every platform are linted from one machine, so the platform-specific
+  # ones are not silently skipped. Linux and Windows get the stubs; darwin gets
+  # the real thing; CI runs the linter on both.
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - errorlint    # errors.Is/As instead of == and type assertions
+    - misspell
+    - nolintlint   # a //nolint must name a linter and say why
+    - revive       # exported names carry a doc comment
+    - unconvert
+  settings:
+    errcheck:
+      # An error assigned to _ is still an ignored error. Without this the linter
+      # accepts `_ = f.Close()`, which is how a rule about never discarding errors
+      # decays into a convention nobody enforces.
+      check-blank: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: error-naming
+        - name: error-strings
+        - name: receiver-naming
+        - name: context-as-argument
+        - name: indent-error-flow
+        - name: unused-parameter
+          disabled: true   # crypto.Signer and friends fix the signatures
+  exclusions:
+    # No presets. std-error-handling in particular exempts every Close, which is
+    # exactly the error the check-blank setting above is there to catch.
+    rules:
+      # Test helpers and fixtures do not need the documentation an API does.
+      - path: _test\.go
+        linters: [revive]
+        text: "exported"
+
+formatters:
+  enable:
+    - gofumpt

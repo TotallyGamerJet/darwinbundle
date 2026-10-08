@@ -476,7 +476,11 @@ func TestBuildRejectsWhatCannotBeBuilt(t *testing.T) {
 				t.Errorf("error %q does not mention %q", err, tc.want)
 			}
 			// Validation happens before anything is written.
-			if entries, _ := os.ReadDir(dir); len(entries) != 0 {
+			entries, err := os.ReadDir(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(entries) != 0 {
 				t.Errorf("a rejected build left %d entries in the output directory", len(entries))
 			}
 		})

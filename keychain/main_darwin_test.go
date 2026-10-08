@@ -22,7 +22,9 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "setting up the test keychain:", err)
 			if env != nil {
-				_ = env.Close() //nolint:errcheck // already failing; Setup has reported its own error
+				if cerr := env.Close(); cerr != nil {
+					fmt.Fprintln(os.Stderr, "and cleaning up after it:", cerr)
+				}
 			}
 			os.Exit(1)
 		}

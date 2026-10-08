@@ -2,6 +2,7 @@ package plist_test
 
 import (
 	"encoding/xml"
+	"errors"
 	"io"
 	"math"
 	"os"
@@ -273,7 +274,7 @@ func FuzzStringsSurviveAnXMLParser(f *testing.F) {
 		var in string
 		for {
 			tok, err := dec.Token()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if err != nil {

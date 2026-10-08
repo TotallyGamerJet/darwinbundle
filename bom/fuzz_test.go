@@ -71,15 +71,20 @@ func FuzzParse(f *testing.F) {
 		}
 		_ = r.NumBlocks()
 		for slot := range r.TableLen() {
-			_, _ = r.Block(bom.BlockID(slot))
+			expectErrors(r.Block(bom.BlockID(slot)))
 		}
 		for _, name := range r.Variables() {
-			_, _ = r.Variable(name)
-			_, _ = r.VariableBlock(name)
-			_, _ = r.Tree(name)
+			expectErrors(r.Variable(name))
+			expectErrors(r.VariableBlock(name))
+			expectErrors(r.Tree(name))
 		}
 	})
 }
+
+// expectErrors takes a result and discards it. Malformed input is supposed to
+// produce errors, so there is nothing to do with one; what is being tested is
+// that asking does not panic or hang.
+func expectErrors[T any](T, error) {}
 
 // FuzzTreeRoundTrip checks the writer rather than the reader: any set of
 // distinct keys must come back from Parse, in key order, with the values they

@@ -33,7 +33,9 @@ func TestMain(m *testing.M) {
 	teardown, err := platformSetup()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "setting up the platform fixtures:", err)
-		_ = os.RemoveAll(dir) //nolint:errcheck // already failing
+		if rerr := os.RemoveAll(dir); rerr != nil {
+			fmt.Fprintln(os.Stderr, "and removing the fixture directory:", rerr)
+		}
 		os.Exit(1)
 	}
 	code := m.Run()

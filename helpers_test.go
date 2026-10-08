@@ -2,6 +2,7 @@ package macbundle_test
 
 import (
 	"encoding/xml"
+	"errors"
 	"image"
 	"image/png"
 	"io"
@@ -101,7 +102,7 @@ func parseValue(dec *xml.Decoder, start xml.StartElement) (any, error) {
 		return strconv.Atoi(s)
 	default: // string, real, date, data
 		var s string
-		if err := dec.DecodeElement(&s, &start); err != nil && err != io.EOF {
+		if err := dec.DecodeElement(&s, &start); err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
 		return s, nil

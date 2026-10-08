@@ -237,14 +237,20 @@ func TestSignAndCloseDoNotRace(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			// Success or "has been closed" are both fine; a crash is not.
-			_, _ = s.Sign(nil, digest[:], crypto.SHA256)
+			// Success, or having lost the race to Close, are both fine. Anything
+			// else — and above all a crash — is not.
+			if _, err := s.Sign(nil, digest[:], crypto.SHA256); err != nil &&
+				!strings.Contains(err.Error(), "has been closed") {
+				t.Errorf("Sign failed for a reason other than the race: %v", err)
+			}
 		}()
 	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		_ = s.Close() //nolint:errcheck // Close on this type always reports nil
+		if err := s.Close(); err != nil {
+			t.Errorf("Close: %v", err)
+		}
 	}()
 	wg.Wait()
 }
