@@ -17,9 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The newest Go, not the one go.mod declares. The standard library ships
+      # inside every binary, and its vulnerabilities are fixed in patch releases,
+      # so scanning with the oldest supported toolchain reports bugs that anyone
+      # building with a current one does not have. What is being asked is whether
+      # this code, built today, is affected.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: go.mod
+          go-version: stable
       # Pinned, like everything else: a vulnerability scanner that changes under
       # you is a build that starts failing for no reason you changed.
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
