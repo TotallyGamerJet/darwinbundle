@@ -1,0 +1,50 @@
+name: Fuzz
+
+# The parsers read untrusted binary input and the encoder escapes caller text.
+# Their seed corpora run as ordinary tests on every push; this runs the fuzzer
+# itself, which is too slow for that, once a week.
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: Fuzzing time per target
+        default: 5m
+
+permissions:
+  contents: read
+
+env:
+  CGO_ENABLED: "0"
+
+jobs:
+  fuzz:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {package: ./bom, target: FuzzParse}
+          - {package: ./bom, target: FuzzTreeRoundTrip}
+          - {package: ./internal/plist, target: FuzzStringsSurviveAnXMLParser}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Fuzz
+        env:
+          DURATION: ${{ inputs.duration || '5m' }}
+        run: go test ${{ matrix.package }} -run '^$' -fuzz '^${{ matrix.target }}$' -fuzztime "$DURATION"
+      # A failure leaves the input that caused it in testdata/fuzz. It is the
+      # reproduction, so keep it.
+      - name: Keep the failing input
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crasher-${{ matrix.target }}
+          path: "**/testdata/fuzz/${{ matrix.target }}/*"
+          if-no-files-found: ignore

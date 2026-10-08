@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch supersedes a run still in progress.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # The module's promise: no cgo anywhere. The race detector is the one thing
+  # that needs it, and the job that uses the race detector says so.
+  CGO_ENABLED: "0"
+
+jobs:
+  lint:
+    name: Lint (${{ matrix.os }})
+    # Linted on both because the platform-specific files differ: macOS gets the
+    # real Keychain code, Linux gets the stubs.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: go.mod and go.sum are tidy
+        run: go mod tidy -diff
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.12.2
+
+  test:
+    name: Test (${{ matrix.os }}, Go ${{ matrix.go }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        # "oldest" is the Go version go.mod declares, the oldest the module
+        # claims to support; "stable" is whatever is current.
+        go: [oldest, stable]
+    env:
+      # On macOS, build a throwaway keychain with generated identities so the
+      # Keychain, signing and end-to-end tests run for real. See
+      # internal/keychaintest. Ignored on Linux.
+      MACBUNDLE_TEST_KEYCHAIN: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up the oldest supported Go
+        if: matrix.go == 'oldest'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Set up the current Go
+        if: matrix.go == 'stable'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - run: go version
+      - run: go build ./...
+      - run: go vet ./...
+      # Without cgo: what the module promises.
+      - name: Test
+        run: go test -count=1 ./...
+      # With the race detector, which needs cgo. Only the oldest Go, to keep the
+      # matrix cheap: a race is not a version-specific property.
+      - name: Test with the race detector
+        if: matrix.go == 'oldest'
+        env:
+          CGO_ENABLED: "1"
+        run: go test -race -count=1 ./...
+
+  # What a program importing this module sees. A replace directive in this
+  # module's go.mod is ignored in a dependency, so consumers get upstream quill,
+  # which cannot sign an application that contains an extension. This job removes
+  # the replace and runs the same tests, so the documented degradation is the
+  # tested one: a recognisable error, and the other tests still passing.
+  upstream-quill:
+    name: Test against upstream quill (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    env:
+      MACBUNDLE_TEST_KEYCHAIN: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Drop the quill replace
+        run: |
+          go mod edit -dropreplace=github.com/anchore/quill
+          go mod tidy
+      - run: go test -count=1 -v -run 'TestSignAnApplicationWithAnExtension|TestReleaseBuildEndToEnd' .
+      - run: go test -count=1 ./...
+
+  # Everything has to compile for every platform people build on, including the
+  # ones the tests do not run on, since a platform-specific file that fails to
+  # build on another platform breaks anyone who imports the package there.
+  cross-build:
+    name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {goos: linux, goarch: amd64}
+          - {goos: linux, goarch: arm64}
+          - {goos: linux, goarch: "386"}
+          - {goos: darwin, goarch: amd64}
+          - {goos: darwin, goarch: arm64}
+          - {goos: windows, goarch: amd64}
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - run: go build ./...
+      # vet type-checks the tests too, which a build does not.
+      - run: go vet ./...

@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      go-dependencies:
+        patterns: ["*"]
+    # quill is held to a specific commit, and a branch is replaced in; see the
+    # comment in go.mod. Update it deliberately.
+    ignore:
+      - dependency-name: github.com/anchore/quill
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
