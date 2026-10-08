@@ -31,6 +31,13 @@
 // are what those files contain, not what a header file suggests. Two are easy
 // to get wrong: a tree node's fixed part is twelve bytes rather than eight, and
 // a leaf's pairs are (value, key) rather than (key, value).
+//
+// # Untrusted input
+//
+// Parse does not trust the file. Every offset and count is checked against the
+// data before it is followed, and a malformed container is an error, never a
+// panic. The returned Reader holds slices of the input rather than copies, so
+// the input must not be modified while the Reader is in use.
 package bom
 
 import (

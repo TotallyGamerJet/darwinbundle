@@ -39,15 +39,21 @@ func Parse(data []byte) (*Reader, error) {
 	return r, nil
 }
 
+// Offsets, counts and lengths in the file are 32-bit, and every sum of them is
+// done in 64 so that none can wrap: on a 32-bit platform an int sum of two
+// plausible-looking values can go negative, pass a "past the end" test, and then
+// index with it.
+
 func (r *Reader) readPointers() error {
-	off := int(r.header.IndexOffset)
-	if off+4 > len(r.data) {
+	size := uint64(len(r.data))
+	at := uint64(r.header.IndexOffset)
+	if at+4 > size {
 		return fmt.Errorf("bom: the block table starts at %#x, past the end of a %d-byte file",
-			off, len(r.data))
+			at, size)
 	}
+	off := int(at)
 	n := binary.BigEndian.Uint32(r.data[off:])
-	end := off + 4 + int(n)*8
-	if end > len(r.data) {
+	if at+4+uint64(n)*8 > size {
 		return fmt.Errorf("bom: the block table claims %d entries, which do not fit in the file", n)
 	}
 	r.pointers = make([]pointer, n)
@@ -62,10 +68,11 @@ func (r *Reader) readPointers() error {
 }
 
 func (r *Reader) readVars() error {
-	off := int(r.header.VarsOffset)
-	if off+4 > len(r.data) {
-		return fmt.Errorf("bom: the variable list starts at %#x, past the end of the file", off)
+	at := uint64(r.header.VarsOffset)
+	if at+4 > uint64(len(r.data)) {
+		return fmt.Errorf("bom: the variable list starts at %#x, past the end of the file", at)
 	}
+	off := int(at)
 	n := binary.BigEndian.Uint32(r.data[off:])
 	off += 4
 	for range n {
@@ -109,8 +116,8 @@ func (r *Reader) Block(id BlockID) ([]byte, error) {
 	if p.address == 0 && p.length == 0 {
 		return nil, nil
 	}
-	end := int(p.address) + int(p.length)
-	if end > len(r.data) {
+	end := uint64(p.address) + uint64(p.length)
+	if end > uint64(len(r.data)) {
 		return nil, fmt.Errorf("bom: block %d runs from %#x to %#x, past the end of the file",
 			id, p.address, end)
 	}
