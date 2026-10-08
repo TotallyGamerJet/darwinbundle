@@ -1,4 +1,4 @@
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle"
+	"github.com/TotallyGamerJet/darwinbundle"
 )
 
 // TestMakeUniversalCarriesBothSlices.
@@ -23,11 +23,11 @@ func TestMakeUniversalCarriesBothSlices(t *testing.T) {
 	intel := thinBinary(t, "amd64")
 	out := filepath.Join(t.TempDir(), "universal")
 
-	if err := macbundle.MakeUniversal(out, arm, intel); err != nil {
+	if err := darwinbundle.MakeUniversal(out, arm, intel); err != nil {
 		t.Fatalf("MakeUniversal: %v", err)
 	}
 
-	arches, err := macbundle.Architectures(out)
+	arches, err := darwinbundle.Architectures(out)
 	if err != nil {
 		t.Fatalf("Architectures: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestMakeUniversalRejectsASingleInput(t *testing.T) {
 	arm := thinBinary(t, "arm64")
 	out := filepath.Join(t.TempDir(), "universal")
 
-	if err := macbundle.MakeUniversal(out, arm); err == nil {
+	if err := darwinbundle.MakeUniversal(out, arm); err == nil {
 		t.Fatal("one input was accepted as a universal binary")
 	}
 }
@@ -69,7 +69,7 @@ func TestMakeUniversalNamesAMissingInput(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "absent")
 	out := filepath.Join(t.TempDir(), "universal")
 
-	err := macbundle.MakeUniversal(out, arm, missing)
+	err := darwinbundle.MakeUniversal(out, arm, missing)
 	if err == nil {
 		t.Fatal("a missing input was accepted")
 	}
@@ -81,7 +81,7 @@ func TestMakeUniversalNamesAMissingInput(t *testing.T) {
 // Architectures reads a thin file too, which is what makes it usable as a check
 // on the build's own output rather than only on merged results.
 func TestArchitecturesReadsAThinBinary(t *testing.T) {
-	arches, err := macbundle.Architectures(thinBinary(t, "arm64"))
+	arches, err := darwinbundle.Architectures(thinBinary(t, "arm64"))
 	if err != nil {
 		t.Fatalf("Architectures: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestArchitecturesReadsAThinBinary(t *testing.T) {
 func TestMakeUniversalRejectsDuplicateArchitectures(t *testing.T) {
 	arm := thinBinary(t, "arm64")
 	out := filepath.Join(t.TempDir(), "universal")
-	if err := macbundle.MakeUniversal(out, arm, copyOf(t, arm)); err == nil {
+	if err := darwinbundle.MakeUniversal(out, arm, copyOf(t, arm)); err == nil {
 		t.Error("two arm64 slices were merged")
 	}
 }
@@ -111,10 +111,10 @@ func TestMakeUniversalReplacesAStaleOutput(t *testing.T) {
 	if err := os.WriteFile(out, []byte("stale, and not a Mach-O"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := macbundle.MakeUniversal(out, arm, intel); err != nil {
+	if err := darwinbundle.MakeUniversal(out, arm, intel); err != nil {
 		t.Fatalf("MakeUniversal over a stale file: %v", err)
 	}
-	arches, err := macbundle.Architectures(out)
+	arches, err := darwinbundle.Architectures(out)
 	if err != nil || len(arches) != 2 {
 		t.Errorf("Architectures = %v, %v; want both slices", arches, err)
 	}
@@ -123,7 +123,7 @@ func TestMakeUniversalReplacesAStaleOutput(t *testing.T) {
 func TestMakeUniversalCreatesTheOutputDirectory(t *testing.T) {
 	arm, intel := thinBinary(t, "arm64"), thinBinary(t, "amd64")
 	out := filepath.Join(t.TempDir(), "a", "b", "universal")
-	if err := macbundle.MakeUniversal(out, arm, intel); err != nil {
+	if err := darwinbundle.MakeUniversal(out, arm, intel); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -133,7 +133,7 @@ func TestArchitecturesRefusesAFileThatIsNotMachO(t *testing.T) {
 	if err := os.WriteFile(p, []byte("hello"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := macbundle.Architectures(p); err == nil {
+	if _, err := darwinbundle.Architectures(p); err == nil {
 		t.Error("a text file was reported as having architectures")
 	}
 }
@@ -146,7 +146,7 @@ func TestTheUniversalBinaryRuns(t *testing.T) {
 		t.Skip("darwin binaries only run on macOS")
 	}
 	out := filepath.Join(t.TempDir(), "universal")
-	if err := macbundle.MakeUniversal(out, thinBinary(t, "arm64"), thinBinary(t, "amd64")); err != nil {
+	if err := darwinbundle.MakeUniversal(out, thinBinary(t, "arm64"), thinBinary(t, "amd64")); err != nil {
 		t.Fatal(err)
 	}
 	if b, err := exec.Command(out).CombinedOutput(); err != nil {

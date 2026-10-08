@@ -1,4 +1,4 @@
-module github.com/TotallyGamerJet/macbundle
+module github.com/TotallyGamerJet/darwinbundle
 
 go 1.26.0
 

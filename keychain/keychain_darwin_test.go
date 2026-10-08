@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/TotallyGamerJet/macbundle/internal/keychaintest"
+	"github.com/TotallyGamerJet/darwinbundle/internal/keychaintest"
 )
 
 func TestFindLocatesTheIdentity(t *testing.T) {
@@ -160,7 +160,7 @@ func TestSignerReportsTheChainLeafFirst(t *testing.T) {
 	if len(chain) == 0 {
 		t.Fatal("no certificates")
 	}
-	// Leaf first is the order macbundle.Signer promises. For a self-signed
+	// Leaf first is the order darwinbundle.Signer promises. For a self-signed
 	// identity the chain is just the leaf, so this also catches a signer that
 	// returned an issuer where the leaf belongs.
 	if !chain[0].Equal(s.Certificate()) {

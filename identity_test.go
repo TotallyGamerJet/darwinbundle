@@ -1,4 +1,4 @@
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"crypto"
@@ -16,7 +16,7 @@ import (
 
 	"software.sslmate.com/src/go-pkcs12"
 
-	"github.com/TotallyGamerJet/macbundle"
+	"github.com/TotallyGamerJet/darwinbundle"
 )
 
 // testTeam is the Team ID the test identities carry in their certificates'
@@ -40,9 +40,9 @@ func newIdentity(t testing.TB) *identity {
 	tmpl := &x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			CommonName:         "macbundle test identity (" + testTeam + ")",
+			CommonName:         "darwinbundle test identity (" + testTeam + ")",
 			OrganizationalUnit: []string{testTeam},
-			Organization:       []string{"macbundle tests"},
+			Organization:       []string{"darwinbundle tests"},
 		},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(24 * time.Hour),
@@ -61,13 +61,13 @@ func newIdentity(t testing.TB) *identity {
 	return &identity{key: key, cert: cert}
 }
 
-// signer adapts the identity to macbundle.Signer, with the chain in the order
+// signer adapts the identity to darwinbundle.Signer, with the chain in the order
 // the interface promises: the leaf first.
 func (i *identity) signer() *softSigner { return &softSigner{id: i} }
 
 type softSigner struct{ id *identity }
 
-var _ macbundle.Signer = (*softSigner)(nil)
+var _ darwinbundle.Signer = (*softSigner)(nil)
 
 func (s *softSigner) Public() crypto.PublicKey { return s.id.key.Public() }
 

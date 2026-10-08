@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/bom"
+	"github.com/TotallyGamerJet/darwinbundle/bom"
 )
 
 // Reading files this package did not write is the only evidence that the format

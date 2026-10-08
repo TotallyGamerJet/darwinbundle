@@ -14,8 +14,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/assetcatalog"
-	"github.com/TotallyGamerJet/macbundle/bom"
+	"github.com/TotallyGamerJet/darwinbundle/assetcatalog"
+	"github.com/TotallyGamerJet/darwinbundle/bom"
 )
 
 // testImage is deterministic so that a byte comparison against actool's output
@@ -133,7 +133,7 @@ func compareWithActool(t *testing.T, size int) {
 		t.Fatalf("the reference holds %d bitmap renditions, want 1", len(want))
 	}
 
-	c := &assetcatalog.Catalog{Creator: "macbundle test"}
+	c := &assetcatalog.Catalog{Creator: "darwinbundle test"}
 	c.AddRendition(assetcatalog.Rendition{
 		Name:  name,
 		Image: img,
@@ -232,7 +232,7 @@ func TestAssetutilReadsOurRendition(t *testing.T) {
 		t.Skip("assetutil is not installed")
 	}
 
-	c := &assetcatalog.Catalog{Creator: "macbundle test"}
+	c := &assetcatalog.Catalog{Creator: "darwinbundle test"}
 	c.AddFacet(assetcatalog.Facet{
 		Name: "AppIcon",
 		Key: assetcatalog.Key{

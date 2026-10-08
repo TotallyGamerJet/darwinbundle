@@ -1,4 +1,4 @@
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/TotallyGamerJet/macbundle"
-	"github.com/TotallyGamerJet/macbundle/keychain"
+	"github.com/TotallyGamerJet/darwinbundle"
+	"github.com/TotallyGamerJet/darwinbundle/keychain"
 )
 
 // A release build, from compiled binaries to a signed archive: universal
@@ -23,15 +23,15 @@ func Example() {
 
 	// Merge the per-architecture builds. Do this before signing: Sign signs each
 	// slice of a universal binary, but cannot merge signed slices.
-	if err := macbundle.MakeUniversal("build/notes", "build/notes-arm64", "build/notes-amd64"); err != nil {
+	if err := darwinbundle.MakeUniversal("build/notes", "build/notes-arm64", "build/notes-amd64"); err != nil {
 		log.Fatal(err)
 	}
-	if err := macbundle.MakeUniversal("build/sync", "build/sync-arm64", "build/sync-amd64"); err != nil {
+	if err := darwinbundle.MakeUniversal("build/sync", "build/sync-arm64", "build/sync-amd64"); err != nil {
 		log.Fatal(err)
 	}
 
-	app := &macbundle.Bundle{
-		Kind:          macbundle.KindApp,
+	app := &darwinbundle.Bundle{
+		Kind:          darwinbundle.KindApp,
 		Name:          "Notes",
 		Identifier:    "com.example.Notes",
 		Version:       "1.4.0",
@@ -39,8 +39,8 @@ func Example() {
 		MinimumSystem: "13.0",
 		Executable:    "build/notes",
 		IconSet:       "assets/AppIcon.appiconset",
-		PlugIns: []*macbundle.Bundle{{
-			Kind:        macbundle.KindExtension,
+		PlugIns: []*darwinbundle.Bundle{{
+			Kind:        darwinbundle.KindExtension,
 			Name:        "NotesSync",
 			DisplayName: "Notes", // what the user sees, not the file name
 			// An extension's identifier must be prefixed by its application's.
@@ -63,7 +63,7 @@ func Example() {
 		log.Fatal(err)
 	}
 
-	// The key stays in the Keychain; macbundle never sees it.
+	// The key stays in the Keychain; darwinbundle never sees it.
 	signer, err := keychain.Find("Developer ID Application")
 	if err != nil {
 		log.Fatal(err)
@@ -80,7 +80,7 @@ func Example() {
 		{ext.Path(app.PlugInsDir(out)), "entitlements/sync.plist"},
 		{appPath, "entitlements/notes.plist"},
 	} {
-		err := macbundle.Sign(target.path, macbundle.SignConfig{
+		err := darwinbundle.Sign(target.path, darwinbundle.SignConfig{
 			Signer:          signer,
 			Entitlements:    target.entitlements,
 			TimestampServer: "http://timestamp.apple.com/ts01",
@@ -91,18 +91,18 @@ func Example() {
 	}
 
 	// Signing is portable; checking is not. This needs a Mac.
-	if res, err := macbundle.Verify(context.Background(), appPath, macbundle.VerifyOptions{Deep: true}); err != nil {
+	if res, err := darwinbundle.Verify(context.Background(), appPath, darwinbundle.VerifyOptions{Deep: true}); err != nil {
 		log.Fatalf("%v\n%s", err, res.Output)
 	}
 
-	if err := macbundle.Zip(filepath.Join(out, "Notes.zip"), appPath); err != nil {
+	if err := darwinbundle.Zip(filepath.Join(out, "Notes.zip"), appPath); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func ExampleBundle() {
-	b := &macbundle.Bundle{
-		Kind:       macbundle.KindApp,
+	b := &darwinbundle.Bundle{
+		Kind:       darwinbundle.KindApp,
 		Name:       "Hello",
 		Identifier: "com.example.Hello",
 		Version:    "1.0",
@@ -124,7 +124,7 @@ func ExampleBundle() {
 func ExampleSign_p12() {
 	// For a CI runner that has the identity as a secret rather than in a
 	// Keychain.
-	err := macbundle.Sign("dist/Hello.app", macbundle.SignConfig{
+	err := darwinbundle.Sign("dist/Hello.app", darwinbundle.SignConfig{
 		P12Path:     "secrets/developer-id.p12",
 		P12Password: "from the environment, not from source",
 	})
@@ -137,14 +137,14 @@ func ExampleSign_adHoc() {
 	// Ad hoc must be chosen: a SignConfig that names no identity is an error.
 	// An ad hoc signature belongs to no team, so it is not enough for code that
 	// needs a team-prefixed App Group.
-	if err := macbundle.Sign("dist/Hello.app", macbundle.SignConfig{AdHoc: true}); err != nil {
+	if err := darwinbundle.Sign("dist/Hello.app", darwinbundle.SignConfig{AdHoc: true}); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func ExampleSign_nestedBundles() {
-	err := macbundle.Sign("dist/Notes.app", macbundle.SignConfig{AdHoc: true})
-	if errors.Is(err, macbundle.ErrNestedBundlesUnsupported) {
+	err := darwinbundle.Sign("dist/Notes.app", darwinbundle.SignConfig{AdHoc: true})
+	if errors.Is(err, darwinbundle.ErrNestedBundlesUnsupported) {
 		// Upstream quill cannot yet seal an application that contains an
 		// extension. The README says what to add to go.mod.
 		log.Fatal("this build cannot sign applications containing extensions: ", err)
@@ -152,8 +152,8 @@ func ExampleSign_nestedBundles() {
 }
 
 func ExampleInspect() {
-	sig, err := macbundle.Inspect(context.Background(), "dist/Hello.app")
-	if errors.Is(err, macbundle.ErrCodesignUnavailable) {
+	sig, err := darwinbundle.Inspect(context.Background(), "dist/Hello.app")
+	if errors.Is(err, darwinbundle.ErrCodesignUnavailable) {
 		log.Fatal("checking a signature needs a Mac")
 	}
 	if err != nil {

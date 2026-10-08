@@ -14,8 +14,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/appiconset"
-	"github.com/TotallyGamerJet/macbundle/bom"
+	"github.com/TotallyGamerJet/darwinbundle/appiconset"
+	"github.com/TotallyGamerJet/darwinbundle/bom"
 )
 
 // square is an opaque gradient n pixels on a side.

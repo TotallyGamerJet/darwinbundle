@@ -1,4 +1,4 @@
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "macbundle-fixtures-")
+	dir, err := os.MkdirTemp("", "darwinbundle-fixtures-")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "creating the fixture directory:", err)
 		os.Exit(1)

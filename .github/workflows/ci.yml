@@ -54,7 +54,7 @@ jobs:
       # On macOS, build a throwaway keychain with generated identities so the
       # Keychain, signing and end-to-end tests run for real. See
       # internal/keychaintest. Ignored on Linux.
-      MACBUNDLE_TEST_KEYCHAIN: "1"
+      DARWINBUNDLE_TEST_KEYCHAIN: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up the oldest supported Go
@@ -94,7 +94,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     env:
-      MACBUNDLE_TEST_KEYCHAIN: "1"
+      DARWINBUNDLE_TEST_KEYCHAIN: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

@@ -20,7 +20,7 @@ them one is to put a throwaway keychain on your user keychain search list for th
 length of the run:
 
 ```sh
-MACBUNDLE_TEST_KEYCHAIN=1 go test ./...
+DARWINBUNDLE_TEST_KEYCHAIN=1 go test ./...
 ```
 
 It creates a keychain holding generated identities, restores your search list

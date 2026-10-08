@@ -7,13 +7,13 @@
 // key stays where the user put it: signing is done by the Security framework
 // through SecKeyCreateSignature, which takes a digest and returns a signature.
 //
-// A Signer satisfies macbundle.Signer, so it can be given straight to
-// macbundle.Sign:
+// A Signer satisfies darwinbundle.Signer, so it can be given straight to
+// darwinbundle.Sign:
 //
 //	signer, err := keychain.Find("Developer ID Application")
 //	if err != nil { ... }
 //	defer signer.Close()
-//	err = macbundle.Sign(path, macbundle.SignConfig{Signer: signer})
+//	err = darwinbundle.Sign(path, darwinbundle.SignConfig{Signer: signer})
 //
 // This package works only on macOS. Elsewhere it compiles, and Find and
 // Identities return ErrUnsupported, so a program can import it unconditionally.
@@ -35,7 +35,7 @@ import "errors"
 // ErrUnsupported is returned by Find and Identities on platforms other than
 // macOS, where there is no Keychain to search.
 var ErrUnsupported = errors.New("keychain: the macOS Keychain is only available on macOS; " +
-	"to sign elsewhere use a PKCS#12 file (macbundle.SignConfig.P12Path)")
+	"to sign elsewhere use a PKCS#12 file (darwinbundle.SignConfig.P12Path)")
 
 // Identity describes one code-signing identity in the Keychain.
 //

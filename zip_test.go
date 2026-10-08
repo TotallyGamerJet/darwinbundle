@@ -1,4 +1,4 @@
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"archive/zip"
@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle"
+	"github.com/TotallyGamerJet/darwinbundle"
 )
 
 // fixtureBundle builds a tree with the shapes that matter: a nested directory,
@@ -85,7 +85,7 @@ func readZipEntry(t *testing.T, f *zip.File) string {
 func TestZipKeepsTheParentDirectory(t *testing.T) {
 	root := fixtureBundle(t)
 	out := filepath.Join(t.TempDir(), "Example.zip")
-	if err := macbundle.Zip(out, root); err != nil {
+	if err := darwinbundle.Zip(out, root); err != nil {
 		t.Fatal(err)
 	}
 
@@ -119,7 +119,7 @@ func TestZipKeepsTheParentDirectory(t *testing.T) {
 func TestZipPreservesTheExecutableBit(t *testing.T) {
 	root := fixtureBundle(t)
 	out := filepath.Join(t.TempDir(), "Example.zip")
-	if err := macbundle.Zip(out, root); err != nil {
+	if err := darwinbundle.Zip(out, root); err != nil {
 		t.Fatal(err)
 	}
 
@@ -142,7 +142,7 @@ func TestZipPreservesTheExecutableBit(t *testing.T) {
 func TestZipPreservesSymlinks(t *testing.T) {
 	root := fixtureBundle(t)
 	out := filepath.Join(t.TempDir(), "Example.zip")
-	if err := macbundle.Zip(out, root); err != nil {
+	if err := darwinbundle.Zip(out, root); err != nil {
 		t.Fatal(err)
 	}
 
@@ -166,7 +166,7 @@ func TestZipPreservesSymlinks(t *testing.T) {
 func TestZipRecordsEmptyDirectories(t *testing.T) {
 	root := fixtureBundle(t)
 	out := filepath.Join(t.TempDir(), "Example.zip")
-	if err := macbundle.Zip(out, root); err != nil {
+	if err := darwinbundle.Zip(out, root); err != nil {
 		t.Fatal(err)
 	}
 
@@ -183,12 +183,12 @@ func TestZipRejectsANonDirectory(t *testing.T) {
 	if err := os.WriteFile(file, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := macbundle.Zip(filepath.Join(t.TempDir(), "out.zip"), file); err == nil {
+	if err := darwinbundle.Zip(filepath.Join(t.TempDir(), "out.zip"), file); err == nil {
 		t.Error("archiving a regular file succeeded")
 	}
 
 	missing := filepath.Join(t.TempDir(), "nothing.app")
-	err := macbundle.Zip(filepath.Join(t.TempDir(), "out.zip"), missing)
+	err := darwinbundle.Zip(filepath.Join(t.TempDir(), "out.zip"), missing)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("archiving a missing path gave %v, want a not-exist error", err)
 	}
@@ -201,7 +201,7 @@ func TestZipRefusesAnArchiveInsideTheTree(t *testing.T) {
 		filepath.Join(root, "inside.zip"),
 		filepath.Join(root, "Contents", "deep", "inside.zip"),
 	} {
-		if err := macbundle.Zip(out, root); err == nil {
+		if err := darwinbundle.Zip(out, root); err == nil {
 			t.Errorf("an archive at %s was accepted", out)
 		}
 		if _, err := os.Stat(out); err == nil {
@@ -210,14 +210,14 @@ func TestZipRefusesAnArchiveInsideTheTree(t *testing.T) {
 	}
 	// A sibling is fine, including one whose name merely starts with the tree's.
 	sibling := root + ".zip"
-	if err := macbundle.Zip(sibling, root); err != nil {
+	if err := darwinbundle.Zip(sibling, root); err != nil {
 		t.Errorf("a sibling archive was refused: %v", err)
 	}
 }
 
 func TestZipCreatesTheOutputDirectory(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "a", "b", "Example.zip")
-	if err := macbundle.Zip(out, fixtureBundle(t)); err != nil {
+	if err := darwinbundle.Zip(out, fixtureBundle(t)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(out); err != nil {

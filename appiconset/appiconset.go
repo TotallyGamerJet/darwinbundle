@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/TotallyGamerJet/macbundle/assetcatalog"
+	"github.com/TotallyGamerJet/darwinbundle/assetcatalog"
 )
 
 // FacetName is the name macOS looks the icon up by, and the value that belongs
@@ -53,7 +53,7 @@ const (
 )
 
 // creator is recorded in the catalog header as the authoring tool.
-const creator = "macbundle"
+const creator = "darwinbundle"
 
 // Entry is one image in a macOS application icon set: a nominal size in points
 // and a scale, which together give the pixel size.

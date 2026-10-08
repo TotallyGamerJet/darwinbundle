@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/bom"
+	"github.com/TotallyGamerJet/darwinbundle/bom"
 )
 
 // seedContainers returns a few valid containers for the fuzzer to mutate.

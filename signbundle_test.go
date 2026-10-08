@@ -1,4 +1,4 @@
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"errors"
@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle"
+	"github.com/TotallyGamerJet/darwinbundle"
 )
 
 // realApp is app() with genuine Mach-O executables, which signing needs.
-func realApp(t testing.TB, withExtension bool) *macbundle.Bundle {
+func realApp(t testing.TB, withExtension bool) *darwinbundle.Bundle {
 	t.Helper()
 	b := app(t)
 	b.Executable = thinBinary(t, "arm64")
@@ -31,7 +31,7 @@ func TestSignAnApplicationBundle(t *testing.T) {
 	dir := t.TempDir()
 	path := build(t, b, dir)
 
-	if err := macbundle.Sign(path, macbundle.SignConfig{Signer: newIdentity(t).signer()}); err != nil {
+	if err := darwinbundle.Sign(path, darwinbundle.SignConfig{Signer: newIdentity(t).signer()}); err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
 	if o, err := exec.Command("codesign", "--verify", "--deep", "--strict", "--verbose=2", path).CombinedOutput(); err != nil {
@@ -50,11 +50,11 @@ func TestSignAnApplicationWithAnExtension(t *testing.T) {
 
 	// From the inside out: the application's seal covers the extension's
 	// signature, so the extension has to be signed first.
-	if err := macbundle.Sign(b.PlugIns[0].Path(b.PlugInsDir(dir)), macbundle.SignConfig{Signer: id}); err != nil {
+	if err := darwinbundle.Sign(b.PlugIns[0].Path(b.PlugInsDir(dir)), darwinbundle.SignConfig{Signer: id}); err != nil {
 		t.Fatalf("signing the extension: %v", err)
 	}
-	if err := macbundle.Sign(path, macbundle.SignConfig{Signer: id}); err != nil {
-		if errors.Is(err, macbundle.ErrNestedBundlesUnsupported) {
+	if err := darwinbundle.Sign(path, darwinbundle.SignConfig{Signer: id}); err != nil {
+		if errors.Is(err, darwinbundle.ErrNestedBundlesUnsupported) {
 			// Built against a quill without anchore/quill#883, which is how
 			// programs importing this module see it unless they replace it. The
 			// refusal must at least be recognisable and explain itself.

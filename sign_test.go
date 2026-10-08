@@ -1,4 +1,4 @@
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle"
+	"github.com/TotallyGamerJet/darwinbundle"
 )
 
 func TestSignRequiresAnExplicitIdentity(t *testing.T) {
@@ -23,18 +23,18 @@ func TestSignRequiresAnExplicitIdentity(t *testing.T) {
 
 	tests := []struct {
 		name string
-		cfg  macbundle.SignConfig
+		cfg  darwinbundle.SignConfig
 		want string
 	}{
-		{"nothing chosen", macbundle.SignConfig{}, "names no signing identity"},
-		{"only metadata", macbundle.SignConfig{Identifier: "x", Entitlements: "e"}, "names no signing identity"},
-		{"two identities", macbundle.SignConfig{AdHoc: true, P12Path: "x.p12"}, "exactly one"},
-		{"all three", macbundle.SignConfig{AdHoc: true, P12Path: "x.p12", Signer: id.signer()}, "exactly one"},
-		{"a timestamp with ad hoc", macbundle.SignConfig{AdHoc: true, TimestampServer: "http://t"}, "needs a certificate"},
+		{"nothing chosen", darwinbundle.SignConfig{}, "names no signing identity"},
+		{"only metadata", darwinbundle.SignConfig{Identifier: "x", Entitlements: "e"}, "names no signing identity"},
+		{"two identities", darwinbundle.SignConfig{AdHoc: true, P12Path: "x.p12"}, "exactly one"},
+		{"all three", darwinbundle.SignConfig{AdHoc: true, P12Path: "x.p12", Signer: id.signer()}, "exactly one"},
+		{"a timestamp with ad hoc", darwinbundle.SignConfig{AdHoc: true, TimestampServer: "http://t"}, "needs a certificate"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := macbundle.Sign(bin, tc.cfg)
+			err := darwinbundle.Sign(bin, tc.cfg)
 			if err == nil {
 				t.Fatal("no error")
 			}
@@ -54,18 +54,18 @@ func TestSignRequiresAnExplicitIdentity(t *testing.T) {
 }
 
 func TestSignNamesWhatIsMissing(t *testing.T) {
-	err := macbundle.Sign(filepath.Join(t.TempDir(), "nothing"), macbundle.SignConfig{AdHoc: true})
+	err := darwinbundle.Sign(filepath.Join(t.TempDir(), "nothing"), darwinbundle.SignConfig{AdHoc: true})
 	if err == nil || !strings.Contains(err.Error(), "nothing to sign") {
 		t.Errorf("got %v", err)
 	}
 
 	bin := copyOf(t, thinBinary(t, "arm64"))
-	err = macbundle.Sign(bin, macbundle.SignConfig{AdHoc: true, Entitlements: "/nonexistent.plist"})
+	err = darwinbundle.Sign(bin, darwinbundle.SignConfig{AdHoc: true, Entitlements: "/nonexistent.plist"})
 	if err == nil || !strings.Contains(err.Error(), "entitlements") {
 		t.Errorf("got %v", err)
 	}
 
-	err = macbundle.Sign(bin, macbundle.SignConfig{P12Path: filepath.Join(t.TempDir(), "absent.p12")})
+	err = darwinbundle.Sign(bin, darwinbundle.SignConfig{P12Path: filepath.Join(t.TempDir(), "absent.p12")})
 	if err == nil || !strings.Contains(err.Error(), "signing certificate") {
 		t.Errorf("got %v", err)
 	}
@@ -77,7 +77,7 @@ func TestAdHocSignature(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := macbundle.Sign(bin, macbundle.SignConfig{AdHoc: true}); err != nil {
+	if err := darwinbundle.Sign(bin, darwinbundle.SignConfig{AdHoc: true}); err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
 	after, err := os.ReadFile(bin)
@@ -88,7 +88,7 @@ func TestAdHocSignature(t *testing.T) {
 		t.Error("signing left the file unchanged")
 	}
 	// Still a Mach-O for the same architecture.
-	if arches, err := macbundle.Architectures(bin); err != nil || len(arches) != 1 || arches[0] != "arm64" {
+	if arches, err := darwinbundle.Architectures(bin); err != nil || len(arches) != 1 || arches[0] != "arm64" {
 		t.Errorf("Architectures after signing = %v, %v", arches, err)
 	}
 
@@ -109,13 +109,13 @@ func TestAdHocSignature(t *testing.T) {
 
 func TestSigningAUniversalBinarySignsEverySlice(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "universal")
-	if err := macbundle.MakeUniversal(out, thinBinary(t, "arm64"), thinBinary(t, "amd64")); err != nil {
+	if err := darwinbundle.MakeUniversal(out, thinBinary(t, "arm64"), thinBinary(t, "amd64")); err != nil {
 		t.Fatal(err)
 	}
-	if err := macbundle.Sign(out, macbundle.SignConfig{Signer: newIdentity(t).signer()}); err != nil {
+	if err := darwinbundle.Sign(out, darwinbundle.SignConfig{Signer: newIdentity(t).signer()}); err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
-	arches, err := macbundle.Architectures(out)
+	arches, err := darwinbundle.Architectures(out)
 	if err != nil || len(arches) != 2 {
 		t.Errorf("Architectures after signing = %v, %v; want both slices kept", arches, err)
 	}
@@ -136,14 +136,14 @@ func TestSigningAUniversalBinarySignsEverySlice(t *testing.T) {
 // thing that matters: the Team ID reaches the signature.
 func TestEverySourceOfAnIdentityCarriesTheTeam(t *testing.T) {
 	id := newIdentity(t)
-	sources := map[string]macbundle.SignConfig{
+	sources := map[string]darwinbundle.SignConfig{
 		"a PKCS#12 file": {P12Path: id.p12(t, "secret"), P12Password: "secret"},
 		"a Signer":       {Signer: id.signer()},
 	}
 	for name, cfg := range sources {
 		t.Run(name, func(t *testing.T) {
 			bin := copyOf(t, thinBinary(t, "arm64"))
-			if err := macbundle.Sign(bin, cfg); err != nil {
+			if err := darwinbundle.Sign(bin, cfg); err != nil {
 				t.Fatalf("Sign: %v", err)
 			}
 			if runtime.GOOS != "darwin" {
@@ -162,8 +162,8 @@ func TestEverySourceOfAnIdentityCarriesTheTeam(t *testing.T) {
 
 func TestAWrongP12PasswordIsReported(t *testing.T) {
 	p12 := newIdentity(t).p12(t, "right")
-	err := macbundle.Sign(copyOf(t, thinBinary(t, "arm64")),
-		macbundle.SignConfig{P12Path: p12, P12Password: "wrong"})
+	err := darwinbundle.Sign(copyOf(t, thinBinary(t, "arm64")),
+		darwinbundle.SignConfig{P12Path: p12, P12Password: "wrong"})
 	if err == nil {
 		t.Fatal("signing with the wrong password succeeded")
 	}
@@ -171,7 +171,7 @@ func TestAWrongP12PasswordIsReported(t *testing.T) {
 
 func TestASignerWithNoCertificatesIsRefused(t *testing.T) {
 	bin := copyOf(t, thinBinary(t, "arm64"))
-	err := macbundle.Sign(bin, macbundle.SignConfig{Signer: noCerts{newIdentity(t).signer()}})
+	err := darwinbundle.Sign(bin, darwinbundle.SignConfig{Signer: noCerts{newIdentity(t).signer()}})
 	if err == nil || !strings.Contains(err.Error(), "no certificates") {
 		t.Errorf("got %v", err)
 	}
@@ -196,7 +196,7 @@ func TestEntitlementsAreEmbedded(t *testing.T) {
 		t.Fatal(err)
 	}
 	bin := copyOf(t, thinBinary(t, "arm64"))
-	if err := macbundle.Sign(bin, macbundle.SignConfig{Signer: newIdentity(t).signer(), Entitlements: ents}); err != nil {
+	if err := darwinbundle.Sign(bin, darwinbundle.SignConfig{Signer: newIdentity(t).signer(), Entitlements: ents}); err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
 	out, err := exec.Command("codesign", "-d", "--entitlements", "-", "--xml", bin).Output()

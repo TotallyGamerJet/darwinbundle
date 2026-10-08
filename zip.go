@@ -1,4 +1,4 @@
-package macbundle
+package darwinbundle
 
 import (
 	"archive/zip"
@@ -51,24 +51,24 @@ func Zip(out, src string) (err error) {
 	root := filepath.Clean(src)
 	info, err := os.Lstat(root)
 	if err != nil {
-		return fmt.Errorf("macbundle: archiving %s: %w", src, err)
+		return fmt.Errorf("darwinbundle: archiving %s: %w", src, err)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("macbundle: archiving %s: not a directory", src)
+		return fmt.Errorf("darwinbundle: archiving %s: not a directory", src)
 	}
 
 	// An archive written inside the tree it is archiving would be walked into
 	// itself, growing as it is read.
 	if rel, rerr := filepath.Rel(root, filepath.Clean(out)); rerr == nil && filepath.IsLocal(rel) {
-		return fmt.Errorf("macbundle: the archive %s is inside %s, which it would try to archive", out, src)
+		return fmt.Errorf("darwinbundle: the archive %s is inside %s, which it would try to archive", out, src)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
-		return fmt.Errorf("macbundle: creating the directory for %s: %w", out, err)
+		return fmt.Errorf("darwinbundle: creating the directory for %s: %w", out, err)
 	}
 	f, err := os.Create(out)
 	if err != nil {
-		return fmt.Errorf("macbundle: creating %s: %w", out, err)
+		return fmt.Errorf("darwinbundle: creating %s: %w", out, err)
 	}
 	zw := zip.NewWriter(f)
 	defer func() {
@@ -108,7 +108,7 @@ func Zip(out, src string) (err error) {
 func writeZipEntry(zw *zip.Writer, p, name string, fi os.FileInfo) (err error) {
 	h, err := zip.FileInfoHeader(fi)
 	if err != nil {
-		return fmt.Errorf("macbundle: describing %s: %w", p, err)
+		return fmt.Errorf("darwinbundle: describing %s: %w", p, err)
 	}
 	// FileInfoHeader names the entry after the file alone; the path within the
 	// archive is ours to set. SetMode has already put the permission bits and
@@ -122,23 +122,23 @@ func writeZipEntry(zw *zip.Writer, p, name string, fi os.FileInfo) (err error) {
 		// what keeps an empty Resources/ in the bundle.
 		h.Name += "/"
 		if _, err := zw.CreateHeader(h); err != nil {
-			return fmt.Errorf("macbundle: adding %s: %w", p, err)
+			return fmt.Errorf("darwinbundle: adding %s: %w", p, err)
 		}
 		return nil
 
 	case fi.Mode()&fs.ModeSymlink != 0:
 		target, err := os.Readlink(p)
 		if err != nil {
-			return fmt.Errorf("macbundle: reading the link %s: %w", p, err)
+			return fmt.Errorf("darwinbundle: reading the link %s: %w", p, err)
 		}
 		// A link target is a few bytes and compresses to more than it saves.
 		h.Method = zip.Store
 		w, err := zw.CreateHeader(h)
 		if err != nil {
-			return fmt.Errorf("macbundle: adding %s: %w", p, err)
+			return fmt.Errorf("darwinbundle: adding %s: %w", p, err)
 		}
 		if _, err := io.WriteString(w, target); err != nil {
-			return fmt.Errorf("macbundle: writing the link %s: %w", p, err)
+			return fmt.Errorf("darwinbundle: writing the link %s: %w", p, err)
 		}
 		return nil
 
@@ -146,15 +146,15 @@ func writeZipEntry(zw *zip.Writer, p, name string, fi os.FileInfo) (err error) {
 		h.Method = zip.Deflate
 		w, err := zw.CreateHeader(h)
 		if err != nil {
-			return fmt.Errorf("macbundle: adding %s: %w", p, err)
+			return fmt.Errorf("darwinbundle: adding %s: %w", p, err)
 		}
 		src, err := os.Open(p)
 		if err != nil {
-			return fmt.Errorf("macbundle: reading %s: %w", p, err)
+			return fmt.Errorf("darwinbundle: reading %s: %w", p, err)
 		}
 		defer func() { err = errors.Join(err, src.Close()) }()
 		if _, err := io.Copy(w, src); err != nil {
-			return fmt.Errorf("macbundle: copying %s: %w", p, err)
+			return fmt.Errorf("darwinbundle: copying %s: %w", p, err)
 		}
 		return nil
 
@@ -162,7 +162,7 @@ func writeZipEntry(zw *zip.Writer, p, name string, fi os.FileInfo) (err error) {
 		// A socket, device or fifo in a bundle is a mistake somewhere upstream.
 		// Skipping it would produce an archive that is quietly not the tree it
 		// claims to be.
-		return fmt.Errorf("macbundle: %s is a %s, which cannot be archived", p, fi.Mode().Type())
+		return fmt.Errorf("darwinbundle: %s is a %s, which cannot be archived", p, fi.Mode().Type())
 	}
 }
 

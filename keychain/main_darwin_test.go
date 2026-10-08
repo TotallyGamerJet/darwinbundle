@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/internal/keychaintest"
+	"github.com/TotallyGamerJet/darwinbundle/internal/keychaintest"
 )
 
 // testEnv is the throwaway keychain, or nil when the tests are not asked to
@@ -54,7 +54,7 @@ func identityName(t *testing.T) string {
 	if name := os.Getenv("SIGNING_IDENTITY"); name != "" {
 		return name
 	}
-	t.Skip("set MACBUNDLE_TEST_KEYCHAIN=1 to test against a throwaway keychain, " +
+	t.Skip("set DARWINBUNDLE_TEST_KEYCHAIN=1 to test against a throwaway keychain, " +
 		"or SIGNING_IDENTITY to use one of your own (which will prompt)")
 	return ""
 }

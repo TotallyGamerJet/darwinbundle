@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/assetcatalog"
+	"github.com/TotallyGamerJet/darwinbundle/assetcatalog"
 )
 
 // TestAssetutilDistinguishesRenditions.
@@ -27,7 +27,7 @@ func TestAssetutilDistinguishesRenditions(t *testing.T) {
 		t.Skip("assetutil is not installed")
 	}
 
-	c := &assetcatalog.Catalog{Creator: "macbundle test"}
+	c := &assetcatalog.Catalog{Creator: "darwinbundle test"}
 	c.AddFacet(assetcatalog.Facet{
 		Name: "AppIcon",
 		Key: assetcatalog.Key{
@@ -117,7 +117,7 @@ func TestTheIconSetDescriptorIsRecognised(t *testing.T) {
 		}
 	}
 
-	c := &assetcatalog.Catalog{Creator: "macbundle test"}
+	c := &assetcatalog.Catalog{Creator: "darwinbundle test"}
 	c.AddFacet(assetcatalog.Facet{Name: "AppIcon", Key: key(220, 0, 0)})
 	c.AddIconSet(assetcatalog.IconSet{
 		Name:  "AppIcon",

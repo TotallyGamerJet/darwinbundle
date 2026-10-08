@@ -8,7 +8,7 @@
 // the duration of a test run: the list is restored on the way out, but a run
 // killed part-way leaves a dangling entry, and that is a decision a developer
 // should make rather than have made for them. CI makes it by setting
-// MACBUNDLE_TEST_KEYCHAIN=1.
+// DARWINBUNDLE_TEST_KEYCHAIN=1.
 //
 // # Concurrency
 //
@@ -50,7 +50,7 @@ const Team = "TEAM123456"
 
 // Env is a live throwaway keychain.
 type Env struct {
-	// Names are the common names of the identities in it, "macbundle keychain
+	// Names are the common names of the identities in it, "darwinbundle keychain
 	// test one (TEAM123456)" and "... two ...": similar enough that a search for
 	// the shared prefix is ambiguous, different enough to tell apart.
 	Names [2]string
@@ -70,7 +70,7 @@ type Env struct {
 }
 
 // Enabled reports whether the environment asks for a throwaway keychain.
-func Enabled() bool { return os.Getenv("MACBUNDLE_TEST_KEYCHAIN") == "1" }
+func Enabled() bool { return os.Getenv("DARWINBUNDLE_TEST_KEYCHAIN") == "1" }
 
 // Setup creates the keychain, imports two identities, and puts it first on the
 // user's search list. Call Close when finished, whatever happened in between.
@@ -79,13 +79,13 @@ func Setup() (env *Env, err error) {
 	if err != nil {
 		return nil, err
 	}
-	dir, err := os.MkdirTemp("", "macbundle-keychain-")
+	dir, err := os.MkdirTemp("", "darwinbundle-keychain-")
 	if err != nil {
 		return nil, errors.Join(err, releaseLock(lock))
 	}
 	// A name unique to this run, so that even a keychain left behind by one that
 	// was killed cannot make a search for these identities ambiguous.
-	prefix := "macbundle keychain test " + randomHex(3)
+	prefix := "darwinbundle keychain test " + randomHex(3)
 	env = &Env{
 		dir:      dir,
 		lock:     lock,
@@ -142,7 +142,7 @@ func Setup() (env *Env, err error) {
 	// A previous run that was killed leaves its keychain on the list, pointing at
 	// a directory that is gone. Carrying it forward would keep it there for good.
 	env.original = slices.DeleteFunc(env.original, func(path string) bool {
-		if !strings.Contains(path, "macbundle-keychain-") {
+		if !strings.Contains(path, "darwinbundle-keychain-") {
 			return false
 		}
 		_, statErr := os.Stat(path)
@@ -180,7 +180,7 @@ func (e *Env) Close() error {
 // is advisory and held on an open file, so the kernel drops it if the process
 // dies, which is what makes a crashed run unable to wedge the next.
 func acquireLock() (*os.File, error) {
-	f, err := os.OpenFile(filepath.Join(os.TempDir(), "macbundle-keychain-tests.lock"), os.O_CREATE|os.O_RDWR, 0o600)
+	f, err := os.OpenFile(filepath.Join(os.TempDir(), "darwinbundle-keychain-tests.lock"), os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("keychaintest: opening the lock: %w", err)
 	}
@@ -215,7 +215,7 @@ func identityP12(commonName string) ([]byte, error) {
 		Subject: pkix.Name{
 			CommonName:         commonName,
 			OrganizationalUnit: []string{Team},
-			Organization:       []string{"macbundle tests"},
+			Organization:       []string{"darwinbundle tests"},
 		},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().Add(48 * time.Hour),

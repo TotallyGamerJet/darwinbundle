@@ -1,4 +1,4 @@
-package macbundle
+package darwinbundle
 
 import (
 	"crypto"
@@ -85,11 +85,11 @@ func Sign(path string, cfg SignConfig) error {
 		return err
 	}
 	if _, err := os.Stat(path); err != nil {
-		return fmt.Errorf("macbundle: nothing to sign at %s: %w", path, err)
+		return fmt.Errorf("darwinbundle: nothing to sign at %s: %w", path, err)
 	}
 	if cfg.Entitlements != "" {
 		if _, err := os.Stat(cfg.Entitlements); err != nil {
-			return fmt.Errorf("macbundle: entitlements file %s: %w", cfg.Entitlements, err)
+			return fmt.Errorf("darwinbundle: entitlements file %s: %w", cfg.Entitlements, err)
 		}
 	}
 
@@ -109,9 +109,9 @@ func Sign(path string, cfg SignConfig) error {
 
 	if err := quill.Sign(*sc); err != nil {
 		if isNestedBundleRefusal(err) {
-			return fmt.Errorf("macbundle: signing %s: %w: %w", path, ErrNestedBundlesUnsupported, err)
+			return fmt.Errorf("darwinbundle: signing %s: %w: %w", path, ErrNestedBundlesUnsupported, err)
 		}
-		return fmt.Errorf("macbundle: signing %s: %w", path, err)
+		return fmt.Errorf("darwinbundle: signing %s: %w", path, err)
 	}
 	return nil
 }
@@ -157,14 +157,14 @@ func (c SignConfig) validate() error {
 	}
 	switch len(chosen) {
 	case 0:
-		return errors.New("macbundle: SignConfig names no signing identity; set Signer, P12Path or AdHoc " +
+		return errors.New("darwinbundle: SignConfig names no signing identity; set Signer, P12Path or AdHoc " +
 			"(AdHoc is a real choice, but it has to be made)")
 	case 1:
 	default:
-		return fmt.Errorf("macbundle: SignConfig sets %v; choose exactly one of Signer, P12Path and AdHoc", chosen)
+		return fmt.Errorf("darwinbundle: SignConfig sets %v; choose exactly one of Signer, P12Path and AdHoc", chosen)
 	}
 	if c.AdHoc && c.TimestampServer != "" {
-		return errors.New("macbundle: a timestamp needs a certificate, so TimestampServer cannot be used with AdHoc")
+		return errors.New("darwinbundle: a timestamp needs a certificate, so TimestampServer cannot be used with AdHoc")
 	}
 	return nil
 }
@@ -175,14 +175,14 @@ func (c SignConfig) quillConfig(path string) (*quill.SigningConfig, error) {
 	case c.Signer != nil:
 		certs := c.Signer.Certificates()
 		if len(certs) == 0 {
-			return nil, errors.New("macbundle: the Signer reports no certificates")
+			return nil, errors.New("darwinbundle: the Signer reports no certificates")
 		}
 		// An ad hoc configuration is the base so the fields that are not about
 		// signing material are set the way quill expects; the material is then
 		// supplied.
 		sc, err := quill.NewSigningConfigFromPEMs(path, "", "", "", false)
 		if err != nil {
-			return nil, fmt.Errorf("macbundle: preparing the signature: %w", err)
+			return nil, fmt.Errorf("darwinbundle: preparing the signature: %w", err)
 		}
 		sc.SigningMaterial = pki.SigningMaterial{
 			Signer:          c.Signer,
@@ -194,13 +194,13 @@ func (c SignConfig) quillConfig(path string) (*quill.SigningConfig, error) {
 	case c.P12Path != "":
 		contents, err := load.P12(c.P12Path, c.P12Password)
 		if err != nil {
-			return nil, fmt.Errorf("macbundle: reading the signing certificate %s: %w", c.P12Path, err)
+			return nil, fmt.Errorf("darwinbundle: reading the signing certificate %s: %w", c.P12Path, err)
 		}
 		// failWithoutFullChain is false so that a certificate without a bundled
 		// intermediate can still be used; the chain is checked at verification.
 		sc, err := quill.NewSigningConfigFromP12(path, *contents, false)
 		if err != nil {
-			return nil, fmt.Errorf("macbundle: preparing the signature: %w", err)
+			return nil, fmt.Errorf("darwinbundle: preparing the signature: %w", err)
 		}
 		return sc, nil
 
@@ -208,7 +208,7 @@ func (c SignConfig) quillConfig(path string) (*quill.SigningConfig, error) {
 		// An empty certificate makes quill produce an ad hoc signature.
 		sc, err := quill.NewSigningConfigFromPEMs(path, "", "", "", false)
 		if err != nil {
-			return nil, fmt.Errorf("macbundle: preparing an ad hoc signature: %w", err)
+			return nil, fmt.Errorf("darwinbundle: preparing an ad hoc signature: %w", err)
 		}
 		return sc, nil
 	}

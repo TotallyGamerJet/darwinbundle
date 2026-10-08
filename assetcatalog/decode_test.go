@@ -16,8 +16,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/assetcatalog"
-	"github.com/TotallyGamerJet/macbundle/bom"
+	"github.com/TotallyGamerJet/darwinbundle/assetcatalog"
+	"github.com/TotallyGamerJet/darwinbundle/bom"
 )
 
 // Decoding a rendition back to pixels, which is the check that was missing.
@@ -116,7 +116,7 @@ func TestRenditionsDecodeToTheOriginalPixels(t *testing.T) {
 	}
 	images := make(map[string]image.Image, len(cases))
 
-	c := &assetcatalog.Catalog{Creator: "macbundle test"}
+	c := &assetcatalog.Catalog{Creator: "darwinbundle test"}
 	for i, tc := range cases {
 		images[tc.name] = tc.img
 		c.AddRendition(assetcatalog.Rendition{
@@ -243,7 +243,7 @@ func TestTransparencySurvives(t *testing.T) {
 		t.Skip("assetutil is not installed")
 	}
 
-	c := &assetcatalog.Catalog{Creator: "macbundle test"}
+	c := &assetcatalog.Catalog{Creator: "darwinbundle test"}
 	// Large enough that the pixels are compressed, which is where the pairing
 	// mattered.
 	c.AddRendition(assetcatalog.Rendition{

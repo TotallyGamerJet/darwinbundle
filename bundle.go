@@ -1,4 +1,4 @@
-package macbundle
+package darwinbundle
 
 import (
 	"errors"
@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/TotallyGamerJet/macbundle/appiconset"
-	"github.com/TotallyGamerJet/macbundle/internal/plist"
+	"github.com/TotallyGamerJet/darwinbundle/appiconset"
+	"github.com/TotallyGamerJet/darwinbundle/internal/plist"
 )
 
 // Kind is the type of a bundle.
@@ -187,12 +187,12 @@ func (b *Bundle) Build(dir string) (path string, err error) {
 		return "", err
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", fmt.Errorf("macbundle: creating %s: %w", dir, err)
+		return "", fmt.Errorf("darwinbundle: creating %s: %w", dir, err)
 	}
 
-	stage, err := os.MkdirTemp(dir, ".macbundle-")
+	stage, err := os.MkdirTemp(dir, ".darwinbundle-")
 	if err != nil {
-		return "", fmt.Errorf("macbundle: creating a staging directory in %s: %w", dir, err)
+		return "", fmt.Errorf("darwinbundle: creating a staging directory in %s: %w", dir, err)
 	}
 	defer func() {
 		// Whatever is left in the staging directory is a failed build, or the
@@ -206,10 +206,10 @@ func (b *Bundle) Build(dir string) (path string, err error) {
 
 	dest := b.Path(dir)
 	if err := os.RemoveAll(dest); err != nil {
-		return "", fmt.Errorf("macbundle: clearing the previous bundle: %w", err)
+		return "", fmt.Errorf("darwinbundle: clearing the previous bundle: %w", err)
 	}
 	if err := os.Rename(b.Path(stage), dest); err != nil {
-		return "", fmt.Errorf("macbundle: moving the bundle into place: %w", err)
+		return "", fmt.Errorf("darwinbundle: moving the bundle into place: %w", err)
 	}
 	return dest, nil
 }
@@ -225,7 +225,7 @@ func (b *Bundle) assemble(dir string) error {
 		filepath.Join(contents, "Resources"),
 	} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
-			return fmt.Errorf("macbundle: creating %s: %w", d, err)
+			return fmt.Errorf("darwinbundle: creating %s: %w", d, err)
 		}
 	}
 
@@ -235,16 +235,16 @@ func (b *Bundle) assemble(dir string) error {
 
 	info, err := plist.Marshal(b.infoPlist())
 	if err != nil {
-		return fmt.Errorf("macbundle: %s Info.plist: %w", b.Name, err)
+		return fmt.Errorf("darwinbundle: %s Info.plist: %w", b.Name, err)
 	}
 	if err := os.WriteFile(filepath.Join(contents, "Info.plist"), info, 0o644); err != nil {
-		return fmt.Errorf("macbundle: writing the Info.plist of %s: %w", b.Name, err)
+		return fmt.Errorf("darwinbundle: writing the Info.plist of %s: %w", b.Name, err)
 	}
 
 	if b.IconSet != "" {
 		out := filepath.Join(contents, "Resources", "Assets.car")
 		if err := appiconset.Compile(b.IconSet, out); err != nil {
-			return fmt.Errorf("macbundle: %s: %w", b.Name, err)
+			return fmt.Errorf("darwinbundle: %s: %w", b.Name, err)
 		}
 	}
 
@@ -259,7 +259,7 @@ func (b *Bundle) assemble(dir string) error {
 		// PkgInfo is legacy but is still what some Launch Services paths look at
 		// first to classify a bundle.
 		if err := os.WriteFile(filepath.Join(contents, "PkgInfo"), []byte("APPL????"), 0o644); err != nil {
-			return fmt.Errorf("macbundle: writing PkgInfo: %w", err)
+			return fmt.Errorf("darwinbundle: writing PkgInfo: %w", err)
 		}
 	}
 
@@ -325,81 +325,81 @@ func (b *Bundle) validateIn(parent *Bundle) error {
 	}
 
 	if !b.Kind.valid() {
-		return fmt.Errorf("macbundle: %s: Kind must be KindApp or KindExtension", label)
+		return fmt.Errorf("darwinbundle: %s: Kind must be KindApp or KindExtension", label)
 	}
 	if err := validName(b.Name); err != nil {
-		return fmt.Errorf("macbundle: Name: %w", err)
+		return fmt.Errorf("darwinbundle: Name: %w", err)
 	}
 	if b.ExecutableName != "" {
 		if err := validName(b.ExecutableName); err != nil {
-			return fmt.Errorf("macbundle: %s: ExecutableName: %w", label, err)
+			return fmt.Errorf("darwinbundle: %s: ExecutableName: %w", label, err)
 		}
 	}
 	if err := validIdentifier(b.Identifier); err != nil {
-		return fmt.Errorf("macbundle: %s: Identifier: %w", label, err)
+		return fmt.Errorf("darwinbundle: %s: Identifier: %w", label, err)
 	}
 	if b.Executable == "" {
-		return fmt.Errorf("macbundle: %s: Executable is required", label)
+		return fmt.Errorf("darwinbundle: %s: Executable is required", label)
 	}
 	if fi, err := os.Stat(b.Executable); err != nil {
-		return fmt.Errorf("macbundle: %s: Executable: %w", label, err)
+		return fmt.Errorf("darwinbundle: %s: Executable: %w", label, err)
 	} else if !fi.Mode().IsRegular() {
-		return fmt.Errorf("macbundle: %s: Executable %s is not a regular file", label, b.Executable)
+		return fmt.Errorf("darwinbundle: %s: Executable %s is not a regular file", label, b.Executable)
 	}
 
 	if got, ok := b.Info["CFBundleExecutable"]; ok && got != b.executableName() {
-		return fmt.Errorf("macbundle: %s: Info sets CFBundleExecutable to %v, but the file this build creates is %q",
+		return fmt.Errorf("darwinbundle: %s: Info sets CFBundleExecutable to %v, but the file this build creates is %q",
 			label, got, b.executableName())
 	}
 
 	if b.Kind == KindExtension {
 		ext, ok := b.Info["NSExtension"]
 		if !ok || isEmptyDict(ext) {
-			return fmt.Errorf("macbundle: %s: an extension needs an NSExtension entry in Info, "+
+			return fmt.Errorf("darwinbundle: %s: an extension needs an NSExtension entry in Info, "+
 				"naming its extension point and principal class", label)
 		}
 		if len(b.PlugIns) > 0 {
-			return fmt.Errorf("macbundle: %s: an extension cannot contain extensions", label)
+			return fmt.Errorf("darwinbundle: %s: an extension cannot contain extensions", label)
 		}
 	}
 
 	if parent != nil && !strings.HasPrefix(b.Identifier, parent.Identifier+".") {
 		// The system finds an extension through its containing app, and refuses
 		// to load one whose identifier is not prefixed by the app's.
-		return fmt.Errorf("macbundle: the extension identifier %q must be prefixed by the application's (%q)",
+		return fmt.Errorf("darwinbundle: the extension identifier %q must be prefixed by the application's (%q)",
 			b.Identifier, parent.Identifier+".")
 	}
 
 	for name, src := range b.Resources {
 		if !filepath.IsLocal(filepath.FromSlash(name)) {
-			return fmt.Errorf("macbundle: %s: resource %q is not a path inside Contents/Resources", label, name)
+			return fmt.Errorf("darwinbundle: %s: resource %q is not a path inside Contents/Resources", label, name)
 		}
 		if b.IconSet != "" && filepath.ToSlash(filepath.Clean(name)) == "Assets.car" {
-			return fmt.Errorf("macbundle: %s: resource %q would overwrite the compiled icon set", label, name)
+			return fmt.Errorf("darwinbundle: %s: resource %q would overwrite the compiled icon set", label, name)
 		}
 		if _, err := os.Stat(src); err != nil {
-			return fmt.Errorf("macbundle: %s: resource %q: %w", label, name, err)
+			return fmt.Errorf("darwinbundle: %s: resource %q: %w", label, name, err)
 		}
 	}
 	if b.IconSet != "" {
 		if _, err := os.Stat(filepath.Join(b.IconSet, "Contents.json")); err != nil {
-			return fmt.Errorf("macbundle: %s: IconSet: %w", label, err)
+			return fmt.Errorf("darwinbundle: %s: IconSet: %w", label, err)
 		}
 	}
 
 	if len(b.PlugIns) > 0 && b.Kind != KindApp {
-		return fmt.Errorf("macbundle: %s: only an application can contain extensions", label)
+		return fmt.Errorf("darwinbundle: %s: only an application can contain extensions", label)
 	}
 	seen := map[string]bool{}
 	for _, p := range b.PlugIns {
 		if p == nil {
-			return fmt.Errorf("macbundle: %s: a nil entry in PlugIns", label)
+			return fmt.Errorf("darwinbundle: %s: a nil entry in PlugIns", label)
 		}
 		if p.Kind != KindExtension {
-			return fmt.Errorf("macbundle: %s: plug-in %q is a %s, not an extension", label, p.Name, p.Kind)
+			return fmt.Errorf("darwinbundle: %s: plug-in %q is a %s, not an extension", label, p.Name, p.Kind)
 		}
 		if seen[p.Name] {
-			return fmt.Errorf("macbundle: %s: two plug-ins are named %q", label, p.Name)
+			return fmt.Errorf("darwinbundle: %s: two plug-ins are named %q", label, p.Name)
 		}
 		seen[p.Name] = true
 		if err := p.validateIn(b); err != nil {
@@ -458,24 +458,24 @@ func sortedKeys[V any](m map[string]V) []string {
 func copyExecutable(src, dst string) (err error) {
 	in, oerr := os.Open(src)
 	if oerr != nil {
-		return fmt.Errorf("macbundle: opening %s: %w", src, oerr)
+		return fmt.Errorf("darwinbundle: opening %s: %w", src, oerr)
 	}
 	defer func() { err = errors.Join(err, in.Close()) }()
 
 	out, cerr := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
 	if cerr != nil {
-		return fmt.Errorf("macbundle: creating %s: %w", dst, cerr)
+		return fmt.Errorf("darwinbundle: creating %s: %w", dst, cerr)
 	}
 	defer func() { err = errors.Join(err, closeUnlessDone(out)) }()
 
 	if _, err := io.Copy(out, in); err != nil {
-		return fmt.Errorf("macbundle: copying %s: %w", src, err)
+		return fmt.Errorf("darwinbundle: copying %s: %w", src, err)
 	}
 	// Closed here rather than only in the defer: a write is not durable until
 	// close reports success, and that has to be part of the copy's own result
 	// rather than something reported after Chmod has already run.
 	if err := out.Close(); err != nil {
-		return fmt.Errorf("macbundle: closing %s: %w", dst, err)
+		return fmt.Errorf("darwinbundle: closing %s: %w", dst, err)
 	}
 	// The mode passed to OpenFile is filtered by the umask; the bundle's binary
 	// must be executable whatever that is.
@@ -499,7 +499,7 @@ func closeUnlessDone(f *os.File) error {
 func copyTree(src, dst string) error {
 	info, err := os.Stat(src)
 	if err != nil {
-		return fmt.Errorf("macbundle: %w", err)
+		return fmt.Errorf("darwinbundle: %w", err)
 	}
 	if !info.IsDir() {
 		return copyFile(src, dst, info.Mode().Perm())
@@ -524,32 +524,32 @@ func copyTree(src, dst string) error {
 			}
 			return copyFile(p, target, fi.Mode().Perm())
 		default:
-			return fmt.Errorf("macbundle: %s is a %s, which cannot be copied into a bundle", p, d.Type().Type())
+			return fmt.Errorf("darwinbundle: %s is a %s, which cannot be copied into a bundle", p, d.Type().Type())
 		}
 	})
 }
 
 func copyFile(src, dst string, perm fs.FileMode) (err error) {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return fmt.Errorf("macbundle: %w", err)
+		return fmt.Errorf("darwinbundle: %w", err)
 	}
 	in, err := os.Open(src)
 	if err != nil {
-		return fmt.Errorf("macbundle: opening %s: %w", src, err)
+		return fmt.Errorf("darwinbundle: opening %s: %w", src, err)
 	}
 	defer func() { err = errors.Join(err, in.Close()) }()
 
 	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
 	if err != nil {
-		return fmt.Errorf("macbundle: creating %s: %w", dst, err)
+		return fmt.Errorf("darwinbundle: creating %s: %w", dst, err)
 	}
 	defer func() { err = errors.Join(err, closeUnlessDone(out)) }()
 
 	if _, err := io.Copy(out, in); err != nil {
-		return fmt.Errorf("macbundle: copying %s: %w", src, err)
+		return fmt.Errorf("darwinbundle: copying %s: %w", src, err)
 	}
 	if err := out.Close(); err != nil {
-		return fmt.Errorf("macbundle: closing %s: %w", dst, err)
+		return fmt.Errorf("darwinbundle: closing %s: %w", dst, err)
 	}
 	return nil
 }

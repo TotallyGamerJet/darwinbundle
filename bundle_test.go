@@ -1,4 +1,4 @@
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"os"
@@ -7,24 +7,24 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle"
-	"github.com/TotallyGamerJet/macbundle/appiconset"
+	"github.com/TotallyGamerJet/darwinbundle"
+	"github.com/TotallyGamerJet/darwinbundle/appiconset"
 )
 
 // app returns a valid application with one valid extension; tests change what
 // they are about.
-func app(t testing.TB) *macbundle.Bundle {
+func app(t testing.TB) *darwinbundle.Bundle {
 	t.Helper()
-	return &macbundle.Bundle{
-		Kind:          macbundle.KindApp,
+	return &darwinbundle.Bundle{
+		Kind:          darwinbundle.KindApp,
 		Name:          "Test App",
 		Identifier:    "com.example.TestApp",
 		Version:       "1.2.3",
 		BuildNumber:   "42",
 		MinimumSystem: "13.0",
 		Executable:    fakeBinary(t, "app"),
-		PlugIns: []*macbundle.Bundle{{
-			Kind:        macbundle.KindExtension,
+		PlugIns: []*darwinbundle.Bundle{{
+			Kind:        darwinbundle.KindExtension,
 			Name:        "TestExt",
 			DisplayName: "Test Extension",
 			Identifier:  "com.example.TestApp.Ext",
@@ -41,7 +41,7 @@ func app(t testing.TB) *macbundle.Bundle {
 	}
 }
 
-func build(t testing.TB, b *macbundle.Bundle, dir string) string {
+func build(t testing.TB, b *darwinbundle.Bundle, dir string) string {
 	t.Helper()
 	path, err := b.Build(dir)
 	if err != nil {
@@ -406,61 +406,61 @@ func TestBuildCreatesTheOutputDirectory(t *testing.T) {
 func TestBuildRejectsWhatCannotBeBuilt(t *testing.T) {
 	tests := []struct {
 		name   string
-		change func(*macbundle.Bundle)
+		change func(*darwinbundle.Bundle)
 		want   string
 	}{
-		{"no kind", func(b *macbundle.Bundle) { b.Kind = 0 }, "Kind"},
-		{"an unknown kind", func(b *macbundle.Bundle) { b.Kind = 99 }, "Kind"},
-		{"no name", func(b *macbundle.Bundle) { b.Name = "" }, "Name"},
-		{"a blank name", func(b *macbundle.Bundle) { b.Name = "  " }, "Name"},
-		{"a name with a slash", func(b *macbundle.Bundle) { b.Name = "a/b" }, "path separator"},
-		{"a name that climbs", func(b *macbundle.Bundle) { b.Name = ".." }, "Name"},
-		{"an executable name with a slash", func(b *macbundle.Bundle) { b.ExecutableName = "../x" }, "ExecutableName"},
-		{"no identifier", func(b *macbundle.Bundle) { b.Identifier = "" }, "Identifier"},
-		{"an identifier with an underscore", func(b *macbundle.Bundle) { b.Identifier = "com.example.my_app" }, "only letters, digits"},
-		{"an identifier with a space", func(b *macbundle.Bundle) { b.Identifier = "com.example.my app" }, "only letters, digits"},
-		{"no executable", func(b *macbundle.Bundle) { b.Executable = "" }, "Executable is required"},
-		{"a missing executable", func(b *macbundle.Bundle) { b.Executable = "/nonexistent/binary" }, "Executable"},
-		{"a directory as the executable", func(b *macbundle.Bundle) { b.Executable = os.TempDir() }, "not a regular file"},
-		{"CFBundleExecutable contradicting the file", func(b *macbundle.Bundle) {
+		{"no kind", func(b *darwinbundle.Bundle) { b.Kind = 0 }, "Kind"},
+		{"an unknown kind", func(b *darwinbundle.Bundle) { b.Kind = 99 }, "Kind"},
+		{"no name", func(b *darwinbundle.Bundle) { b.Name = "" }, "Name"},
+		{"a blank name", func(b *darwinbundle.Bundle) { b.Name = "  " }, "Name"},
+		{"a name with a slash", func(b *darwinbundle.Bundle) { b.Name = "a/b" }, "path separator"},
+		{"a name that climbs", func(b *darwinbundle.Bundle) { b.Name = ".." }, "Name"},
+		{"an executable name with a slash", func(b *darwinbundle.Bundle) { b.ExecutableName = "../x" }, "ExecutableName"},
+		{"no identifier", func(b *darwinbundle.Bundle) { b.Identifier = "" }, "Identifier"},
+		{"an identifier with an underscore", func(b *darwinbundle.Bundle) { b.Identifier = "com.example.my_app" }, "only letters, digits"},
+		{"an identifier with a space", func(b *darwinbundle.Bundle) { b.Identifier = "com.example.my app" }, "only letters, digits"},
+		{"no executable", func(b *darwinbundle.Bundle) { b.Executable = "" }, "Executable is required"},
+		{"a missing executable", func(b *darwinbundle.Bundle) { b.Executable = "/nonexistent/binary" }, "Executable"},
+		{"a directory as the executable", func(b *darwinbundle.Bundle) { b.Executable = os.TempDir() }, "not a regular file"},
+		{"CFBundleExecutable contradicting the file", func(b *darwinbundle.Bundle) {
 			b.Info = map[string]any{"CFBundleExecutable": "other"}
 		}, "CFBundleExecutable"},
-		{"an Info value a plist cannot hold", func(b *macbundle.Bundle) {
+		{"an Info value a plist cannot hold", func(b *darwinbundle.Bundle) {
 			b.Info = map[string]any{"Bad": make(chan int)}
 		}, "Bad"},
-		{"a resource that escapes", func(b *macbundle.Bundle) {
+		{"a resource that escapes", func(b *darwinbundle.Bundle) {
 			b.Resources = map[string]string{"../outside": b.Executable}
 		}, "not a path inside"},
-		{"an absolute resource path", func(b *macbundle.Bundle) {
+		{"an absolute resource path", func(b *darwinbundle.Bundle) {
 			b.Resources = map[string]string{"/etc/x": b.Executable}
 		}, "not a path inside"},
-		{"a resource that does not exist", func(b *macbundle.Bundle) {
+		{"a resource that does not exist", func(b *darwinbundle.Bundle) {
 			b.Resources = map[string]string{"x": "/nonexistent/file"}
 		}, "resource"},
-		{"an icon set that does not exist", func(b *macbundle.Bundle) { b.IconSet = "/nonexistent/set" }, "IconSet"},
-		{"a nil plug-in", func(b *macbundle.Bundle) { b.PlugIns = append(b.PlugIns, nil) }, "nil"},
-		{"an application as a plug-in", func(b *macbundle.Bundle) { b.PlugIns[0].Kind = macbundle.KindApp }, "not an extension"},
-		{"two plug-ins of one name", func(b *macbundle.Bundle) {
+		{"an icon set that does not exist", func(b *darwinbundle.Bundle) { b.IconSet = "/nonexistent/set" }, "IconSet"},
+		{"a nil plug-in", func(b *darwinbundle.Bundle) { b.PlugIns = append(b.PlugIns, nil) }, "nil"},
+		{"an application as a plug-in", func(b *darwinbundle.Bundle) { b.PlugIns[0].Kind = darwinbundle.KindApp }, "not an extension"},
+		{"two plug-ins of one name", func(b *darwinbundle.Bundle) {
 			dup := *b.PlugIns[0]
 			b.PlugIns = append(b.PlugIns, &dup)
 		}, "two plug-ins"},
-		{"an extension with the wrong identifier prefix", func(b *macbundle.Bundle) {
+		{"an extension with the wrong identifier prefix", func(b *darwinbundle.Bundle) {
 			b.PlugIns[0].Identifier = "com.other.Ext"
 		}, "must be prefixed"},
-		{"an extension whose identifier merely starts with the app's", func(b *macbundle.Bundle) {
+		{"an extension whose identifier merely starts with the app's", func(b *darwinbundle.Bundle) {
 			// com.example.TestAppExtra begins with com.example.TestApp but is
 			// not inside its namespace.
 			b.PlugIns[0].Identifier = "com.example.TestAppExtra"
 		}, "must be prefixed"},
-		{"an extension with no NSExtension", func(b *macbundle.Bundle) { b.PlugIns[0].Info = nil }, "NSExtension"},
-		{"an extension with an empty NSExtension", func(b *macbundle.Bundle) {
+		{"an extension with no NSExtension", func(b *darwinbundle.Bundle) { b.PlugIns[0].Info = nil }, "NSExtension"},
+		{"an extension with an empty NSExtension", func(b *darwinbundle.Bundle) {
 			b.PlugIns[0].Info = map[string]any{"NSExtension": map[string]any{}}
 		}, "NSExtension"},
-		{"an extension containing an extension", func(b *macbundle.Bundle) {
+		{"an extension containing an extension", func(b *darwinbundle.Bundle) {
 			inner := *b.PlugIns[0]
 			inner.Name = "Inner"
 			inner.Identifier = "com.example.TestApp.Ext.Inner"
-			b.PlugIns[0].PlugIns = []*macbundle.Bundle{&inner}
+			b.PlugIns[0].PlugIns = []*darwinbundle.Bundle{&inner}
 		}, "cannot contain extensions"},
 	}
 	for _, tc := range tests {
@@ -507,7 +507,7 @@ func TestOnlyAnApplicationMayContainExtensions(t *testing.T) {
 	other := *ext
 	other.Name = "Other"
 	other.Identifier = ext.Identifier + ".Other"
-	ext.PlugIns = []*macbundle.Bundle{&other}
+	ext.PlugIns = []*darwinbundle.Bundle{&other}
 	if _, err := ext.Build(t.TempDir()); err == nil {
 		t.Error("an extension was allowed to contain an extension")
 	}

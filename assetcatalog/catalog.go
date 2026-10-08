@@ -47,7 +47,7 @@ import (
 	"io"
 	"slices"
 
-	"github.com/TotallyGamerJet/macbundle/bom"
+	"github.com/TotallyGamerJet/darwinbundle/bom"
 )
 
 // Variable names CoreUI looks for in the container.

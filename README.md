@@ -1,13 +1,13 @@
-# macbundle
+# darwinbundle
 
-[![CI](https://github.com/TotallyGamerJet/macbundle/actions/workflows/ci.yml/badge.svg)](https://github.com/TotallyGamerJet/macbundle/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/TotallyGamerJet/macbundle.svg)](https://pkg.go.dev/github.com/TotallyGamerJet/macbundle)
+[![CI](https://github.com/TotallyGamerJet/darwinbundle/actions/workflows/ci.yml/badge.svg)](https://github.com/TotallyGamerJet/darwinbundle/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/TotallyGamerJet/darwinbundle.svg)](https://pkg.go.dev/github.com/TotallyGamerJet/darwinbundle)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 Build, sign and package macOS application bundles from Go — without Xcode, and
 for most of it without a Mac.
 
-Compile your binaries with `GOOS=darwin`, then let `macbundle` do the rest:
+Compile your binaries with `GOOS=darwin`, then let `darwinbundle` do the rest:
 assemble `Name.app` with app extensions nested inside it, compile an icon,
 merge architectures into a universal binary, code-sign everything, and zip it
 with the symlinks and executable bits a bundle needs to survive the trip.
@@ -16,8 +16,8 @@ signature needs a Mac.
 
 ```go
 // Errors elided for brevity.
-app := &macbundle.Bundle{
-	Kind:       macbundle.KindApp,
+app := &darwinbundle.Bundle{
+	Kind:       darwinbundle.KindApp,
 	Name:       "Notes",
 	Identifier: "com.example.Notes",
 	Version:    "1.4.0",
@@ -26,38 +26,38 @@ app := &macbundle.Bundle{
 }
 path, err := app.Build("dist") // dist/Notes.app
 
-err = macbundle.Sign(path, macbundle.SignConfig{
+err = darwinbundle.Sign(path, darwinbundle.SignConfig{
 	P12Path:     "developer-id.p12",
 	P12Password: os.Getenv("P12_PASSWORD"),
 })
 
-err = macbundle.Zip("dist/Notes.zip", path)
+err = darwinbundle.Zip("dist/Notes.zip", path)
 ```
 
 There is a complete release build — universal binaries, an extension, signing
 from the inside out, verification — in the package
-[examples](https://pkg.go.dev/github.com/TotallyGamerJet/macbundle#example-package).
+[examples](https://pkg.go.dev/github.com/TotallyGamerJet/darwinbundle#example-package).
 
 ## Install
 
 ```sh
-go get github.com/TotallyGamerJet/macbundle
+go get github.com/TotallyGamerJet/darwinbundle
 ```
 
 Go 1.26 or newer. No cgo, and nothing to install.
 
 ## What is in it
 
-`macbundle` is the one package most programs need. The others are what it is
+`darwinbundle` is the one package most programs need. The others are what it is
 built from, and each is useful on its own.
 
 | Package | What it does | Where it runs |
 |---|---|---|
-| [`macbundle`](https://pkg.go.dev/github.com/TotallyGamerJet/macbundle) | `Bundle` (assemble), `Sign`, `Verify`, `Inspect`, `MakeUniversal`, `Zip` | Everywhere, except `Verify` and `Inspect`, which need `codesign` |
-| [`appiconset`](https://pkg.go.dev/github.com/TotallyGamerJet/macbundle/appiconset) | Compile an `.appiconset` directory into an `Assets.car` | Everywhere |
-| [`assetcatalog`](https://pkg.go.dev/github.com/TotallyGamerJet/macbundle/assetcatalog) | Write the CoreUI structures inside an `Assets.car` | Everywhere |
-| [`bom`](https://pkg.go.dev/github.com/TotallyGamerJet/macbundle/bom) | Read and write Apple's Bill of Materials container (`.pkg` receipts, `.car` files) | Everywhere |
-| [`keychain`](https://pkg.go.dev/github.com/TotallyGamerJet/macbundle/keychain) | A `crypto.Signer` backed by an identity in the macOS Keychain | macOS (compiles everywhere) |
+| [`darwinbundle`](https://pkg.go.dev/github.com/TotallyGamerJet/darwinbundle) | `Bundle` (assemble), `Sign`, `Verify`, `Inspect`, `MakeUniversal`, `Zip` | Everywhere, except `Verify` and `Inspect`, which need `codesign` |
+| [`appiconset`](https://pkg.go.dev/github.com/TotallyGamerJet/darwinbundle/appiconset) | Compile an `.appiconset` directory into an `Assets.car` | Everywhere |
+| [`assetcatalog`](https://pkg.go.dev/github.com/TotallyGamerJet/darwinbundle/assetcatalog) | Write the CoreUI structures inside an `Assets.car` | Everywhere |
+| [`bom`](https://pkg.go.dev/github.com/TotallyGamerJet/darwinbundle/bom) | Read and write Apple's Bill of Materials container (`.pkg` receipts, `.car` files) | Everywhere |
+| [`keychain`](https://pkg.go.dev/github.com/TotallyGamerJet/darwinbundle/keychain) | A `crypto.Signer` backed by an identity in the macOS Keychain | macOS (compiles everywhere) |
 
 ## Signing
 
@@ -83,7 +83,7 @@ signer, err := keychain.Find("Developer ID Application")
 defer signer.Close()
 
 for _, p := range []string{extensionPath, appPath} {
-	err := macbundle.Sign(p, macbundle.SignConfig{Signer: signer})
+	err := darwinbundle.Sign(p, darwinbundle.SignConfig{Signer: signer})
 }
 ```
 
@@ -126,8 +126,8 @@ takes everything else from `Info`, which wins where the two overlap. That is how
 anything specific to a kind of bundle stays out of the library:
 
 ```go
-&macbundle.Bundle{
-	Kind:        macbundle.KindExtension,
+&darwinbundle.Bundle{
+	Kind:        darwinbundle.KindExtension,
 	Name:        "NotesSync",
 	DisplayName: "Notes",                 // what the user sees
 	Identifier:  "com.example.Notes.Sync", // must be prefixed by the app's
@@ -155,7 +155,7 @@ archive.
 
 **It doesn't:** notarise, build `.dmg` or `.pkg` installers, handle frameworks,
 or produce Mac App Store packages. Compiling your Go code for `darwin` is also
-yours; `macbundle` starts from the binaries.
+yours; `darwinbundle` starts from the binaries.
 
 ## Why pure Go
 

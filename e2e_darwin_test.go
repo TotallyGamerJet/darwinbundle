@@ -1,6 +1,6 @@
 //go:build darwin
 
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle"
-	"github.com/TotallyGamerJet/macbundle/keychain"
+	"github.com/TotallyGamerJet/darwinbundle"
+	"github.com/TotallyGamerJet/darwinbundle/keychain"
 )
 
 func needKeychain(t *testing.T) {
 	t.Helper()
 	if keychainEnv == nil {
-		t.Skip("set MACBUNDLE_TEST_KEYCHAIN=1 to test against a throwaway keychain")
+		t.Skip("set DARWINBUNDLE_TEST_KEYCHAIN=1 to test against a throwaway keychain")
 	}
 }
 
@@ -34,17 +34,17 @@ func TestSigningWithAKeychainIdentity(t *testing.T) {
 	}()
 
 	bin := copyOf(t, thinBinary(t, "arm64"))
-	if err := macbundle.Sign(bin, macbundle.SignConfig{Signer: signer, Identifier: "com.example.keychain"}); err != nil {
+	if err := darwinbundle.Sign(bin, darwinbundle.SignConfig{Signer: signer, Identifier: "com.example.keychain"}); err != nil {
 		t.Fatalf("Sign: %v", err)
 	}
-	sig, err := macbundle.Inspect(context.Background(), bin)
+	sig, err := darwinbundle.Inspect(context.Background(), bin)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if sig.TeamID != testTeam || sig.AdHoc || sig.Identifier != "com.example.keychain" {
 		t.Errorf("signature = %+v", sig)
 	}
-	if res, err := macbundle.Verify(context.Background(), bin, macbundle.VerifyOptions{}); err != nil {
+	if res, err := darwinbundle.Verify(context.Background(), bin, darwinbundle.VerifyOptions{}); err != nil {
 		t.Errorf("the signature does not verify: %v\n%s", err, res.Output)
 	}
 }
@@ -63,7 +63,7 @@ func TestReleaseBuildEndToEnd(t *testing.T) {
 
 	universal := func(name string) string {
 		out := filepath.Join(dir, "bin", name)
-		if err := macbundle.MakeUniversal(out, thinBinary(t, "arm64"), thinBinary(t, "amd64")); err != nil {
+		if err := darwinbundle.MakeUniversal(out, thinBinary(t, "arm64"), thinBinary(t, "amd64")); err != nil {
 			t.Fatal(err)
 		}
 		return out
@@ -85,26 +85,26 @@ func TestReleaseBuildEndToEnd(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	cfg := macbundle.SignConfig{Signer: signer}
+	cfg := darwinbundle.SignConfig{Signer: signer}
 
 	// From the inside out: the application's seal covers the extension's
 	// signature, so the extension is signed first.
-	if err := macbundle.Sign(b.PlugIns[0].Path(b.PlugInsDir(out)), cfg); err != nil {
+	if err := darwinbundle.Sign(b.PlugIns[0].Path(b.PlugInsDir(out)), cfg); err != nil {
 		t.Fatalf("signing the extension: %v", err)
 	}
-	if err := macbundle.Sign(appPath, cfg); err != nil {
-		if errors.Is(err, macbundle.ErrNestedBundlesUnsupported) {
+	if err := darwinbundle.Sign(appPath, cfg); err != nil {
+		if errors.Is(err, darwinbundle.ErrNestedBundlesUnsupported) {
 			t.Skip("this quill cannot sign nested bundles; see ErrNestedBundlesUnsupported")
 		}
 		t.Fatalf("signing the application: %v", err)
 	}
-	if res, err := macbundle.Verify(ctx, appPath, macbundle.VerifyOptions{Deep: true}); err != nil {
+	if res, err := darwinbundle.Verify(ctx, appPath, darwinbundle.VerifyOptions{Deep: true}); err != nil {
 		t.Fatalf("the signed application does not verify: %v\n%s", err, res.Output)
 	}
 
 	// Archive, unpack somewhere else, verify the copy.
 	zipPath := filepath.Join(dir, "App.zip")
-	if err := macbundle.Zip(zipPath, appPath); err != nil {
+	if err := darwinbundle.Zip(zipPath, appPath); err != nil {
 		t.Fatalf("Zip: %v", err)
 	}
 	unpacked := filepath.Join(dir, "unpacked")
@@ -115,13 +115,13 @@ func TestReleaseBuildEndToEnd(t *testing.T) {
 		t.Fatalf("unzip: %v\n%s", err, o)
 	}
 	copyPath := filepath.Join(unpacked, filepath.Base(appPath))
-	if res, err := macbundle.Verify(ctx, copyPath, macbundle.VerifyOptions{Deep: true}); err != nil {
+	if res, err := darwinbundle.Verify(ctx, copyPath, darwinbundle.VerifyOptions{Deep: true}); err != nil {
 		t.Fatalf("the unpacked application does not verify: %v\n%s", err, res.Output)
 	}
 
 	// And it is signed by the identity that signed it, in every piece.
 	for _, p := range []string{copyPath, b.PlugIns[0].Path(b.PlugInsDir(unpacked))} {
-		sig, err := macbundle.Inspect(ctx, p)
+		sig, err := darwinbundle.Inspect(ctx, p)
 		if err != nil {
 			t.Fatal(err)
 		}

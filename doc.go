@@ -1,4 +1,4 @@
-// Package macbundle builds, signs and packages macOS application bundles from Go,
+// Package darwinbundle builds, signs and packages macOS application bundles from Go,
 // without Xcode and, for most of it, without a Mac.
 //
 // The pieces are the ones a release build of an app needs, each usable on its
@@ -46,4 +46,4 @@
 //
 // See the Example in this package for assembling, signing and archiving an
 // application with an extension.
-package macbundle
+package darwinbundle

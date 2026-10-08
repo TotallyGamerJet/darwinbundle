@@ -1,4 +1,4 @@
-package macbundle
+package darwinbundle
 
 import (
 	"errors"
@@ -28,30 +28,30 @@ import (
 // output is made executable, which lipo's own is not.
 func MakeUniversal(out string, inputs ...string) error {
 	if len(inputs) < 2 {
-		return fmt.Errorf("macbundle: a universal binary needs at least two inputs, got %d", len(inputs))
+		return fmt.Errorf("darwinbundle: a universal binary needs at least two inputs, got %d", len(inputs))
 	}
 	for _, in := range inputs {
 		if _, err := os.Stat(in); err != nil {
-			return fmt.Errorf("macbundle: universal input %s: %w", in, err)
+			return fmt.Errorf("darwinbundle: universal input %s: %w", in, err)
 		}
 	}
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
-		return fmt.Errorf("macbundle: creating the directory for %s: %w", out, err)
+		return fmt.Errorf("darwinbundle: creating the directory for %s: %w", out, err)
 	}
 	// lipo writes the output itself; a stale file of the wrong shape left in
 	// place would otherwise be what gets signed.
 	if err := os.Remove(out); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("macbundle: clearing %s: %w", out, err)
+		return fmt.Errorf("darwinbundle: clearing %s: %w", out, err)
 	}
 
 	l := lipo.New(lipo.WithInputs(inputs...), lipo.WithOutput(out))
 	if err := l.Create(); err != nil {
-		return fmt.Errorf("macbundle: merging %v into %s: %w", inputs, out, err)
+		return fmt.Errorf("darwinbundle: merging %v into %s: %w", inputs, out, err)
 	}
 
 	// The binaries are executable; lipo's output is not, by default.
 	if err := os.Chmod(out, 0o755); err != nil {
-		return fmt.Errorf("macbundle: making %s executable: %w", out, err)
+		return fmt.Errorf("darwinbundle: making %s executable: %w", out, err)
 	}
 	return nil
 }
@@ -61,7 +61,7 @@ func MakeUniversal(out string, inputs ...string) error {
 func Architectures(path string) ([]string, error) {
 	arches, err := lipo.New(lipo.WithInputs(path)).Archs()
 	if err != nil {
-		return nil, fmt.Errorf("macbundle: reading the architectures of %s: %w", path, err)
+		return nil, fmt.Errorf("darwinbundle: reading the architectures of %s: %w", path, err)
 	}
 	return arches, nil
 }

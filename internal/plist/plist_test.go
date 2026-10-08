@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/TotallyGamerJet/macbundle/internal/plist"
+	"github.com/TotallyGamerJet/darwinbundle/internal/plist"
 )
 
 func marshal(t *testing.T, root map[string]any) string {

@@ -1,4 +1,4 @@
-package macbundle
+package darwinbundle
 
 import (
 	"bytes"
@@ -82,9 +82,9 @@ func Verify(ctx context.Context, path string, opts VerifyOptions) (VerifyResult,
 
 	if runErr != nil {
 		if ctx.Err() != nil {
-			return res, fmt.Errorf("macbundle: verifying %s: %w", path, ctx.Err())
+			return res, fmt.Errorf("darwinbundle: verifying %s: %w", path, ctx.Err())
 		}
-		return res, fmt.Errorf("macbundle: codesign rejected %s: %s", path, res.Output)
+		return res, fmt.Errorf("darwinbundle: codesign rejected %s: %s", path, res.Output)
 	}
 	return res, nil
 }
@@ -130,13 +130,13 @@ func Inspect(ctx context.Context, path string) (Signature, error) {
 	// -d -vv writes the code directory summary to stderr.
 	out, runErr := exec.CommandContext(ctx, codesign, "-d", "-vv", path).CombinedOutput()
 	if ctx.Err() != nil {
-		return Signature{}, fmt.Errorf("macbundle: reading the signature of %s: %w", path, ctx.Err())
+		return Signature{}, fmt.Errorf("darwinbundle: reading the signature of %s: %w", path, ctx.Err())
 	}
 	if runErr != nil {
 		if bytes.Contains(out, []byte("not signed at all")) {
 			return Signature{}, nil
 		}
-		return Signature{}, fmt.Errorf("macbundle: reading the signature of %s: %s",
+		return Signature{}, fmt.Errorf("darwinbundle: reading the signature of %s: %s",
 			path, strings.TrimSpace(string(out)))
 	}
 	return parseSignature(string(out)), nil
@@ -194,7 +194,7 @@ func codeDirectoryFlags(line string) map[string]bool {
 func lookCodesign() (string, error) {
 	path, err := exec.LookPath("codesign")
 	if err != nil {
-		return "", fmt.Errorf("macbundle: %w", ErrCodesignUnavailable)
+		return "", fmt.Errorf("darwinbundle: %w", ErrCodesignUnavailable)
 	}
 	return path, nil
 }

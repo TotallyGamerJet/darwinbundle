@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/assetcatalog"
+	"github.com/TotallyGamerJet/darwinbundle/assetcatalog"
 )
 
 func pixel() image.Image {

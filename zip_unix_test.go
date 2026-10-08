@@ -1,6 +1,6 @@
 //go:build unix
 
-package macbundle_test
+package darwinbundle_test
 
 import (
 	"os"
@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle"
+	"github.com/TotallyGamerJet/darwinbundle"
 )
 
 // Anything that is not a file, directory or symlink is refused. Skipping it
@@ -22,7 +22,7 @@ func TestZipRefusesAnIrregularFile(t *testing.T) {
 		t.Skipf("cannot create a fifo here: %v", err)
 	}
 
-	err := macbundle.Zip(filepath.Join(t.TempDir(), "Example.zip"), root)
+	err := darwinbundle.Zip(filepath.Join(t.TempDir(), "Example.zip"), root)
 	if err == nil {
 		t.Fatal("archiving a bundle containing a fifo succeeded")
 	}
@@ -39,7 +39,7 @@ func TestAFailedZipLeavesNoArchiveBehind(t *testing.T) {
 		t.Skipf("cannot create a fifo here: %v", err)
 	}
 	out := filepath.Join(t.TempDir(), "Example.zip")
-	if err := macbundle.Zip(out, root); err == nil {
+	if err := darwinbundle.Zip(out, root); err == nil {
 		t.Fatal("expected a failure")
 	}
 	if _, err := os.Stat(out); err == nil {
@@ -57,7 +57,7 @@ func TestUnzipRestoresModesAndLinks(t *testing.T) {
 	}
 	root := fixtureBundle(t)
 	out := filepath.Join(t.TempDir(), "Example.zip")
-	if err := macbundle.Zip(out, root); err != nil {
+	if err := darwinbundle.Zip(out, root); err != nil {
 		t.Fatal(err)
 	}
 

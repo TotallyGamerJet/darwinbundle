@@ -10,8 +10,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/TotallyGamerJet/macbundle/assetcatalog"
-	"github.com/TotallyGamerJet/macbundle/bom"
+	"github.com/TotallyGamerJet/darwinbundle/assetcatalog"
+	"github.com/TotallyGamerJet/darwinbundle/bom"
 )
 
 func build(t *testing.T, c *assetcatalog.Catalog) []byte {
@@ -24,7 +24,7 @@ func build(t *testing.T, c *assetcatalog.Catalog) []byte {
 }
 
 func sample() *assetcatalog.Catalog {
-	c := &assetcatalog.Catalog{Creator: "macbundle test"}
+	c := &assetcatalog.Catalog{Creator: "darwinbundle test"}
 	c.AddFacet(assetcatalog.Facet{
 		Name: "AppIcon",
 		Key: assetcatalog.Key{

@@ -17,13 +17,13 @@ import (
 	"github.com/ebitengine/purego/cstrings"
 	"github.com/ebitengine/purego/objc"
 
-	"github.com/TotallyGamerJet/macbundle/internal/cocoa"
+	"github.com/TotallyGamerJet/darwinbundle/internal/cocoa"
 )
 
 // Signer signs with a private key held in the Keychain.
 //
 // It satisfies crypto.Signer, which is what quill's signing material accepts,
-// and macbundle.Signer. A Signer holds a reference to the key until Close is
+// and darwinbundle.Signer. A Signer holds a reference to the key until Close is
 // called.
 type Signer struct {
 	// cert is the leaf certificate. Its public key is the signer's public key,
@@ -326,7 +326,7 @@ func certificateDER(cert objc.ID) []byte {
 // by the time the real operations run the program is on the list and they
 // proceed silently.
 func (s *Signer) authorise() error {
-	digest := sha256.Sum256([]byte("macbundle keychain authorisation probe"))
+	digest := sha256.Sum256([]byte("darwinbundle keychain authorisation probe"))
 	_, err := s.Sign(nil, digest[:], crypto.SHA256)
 	return err
 }

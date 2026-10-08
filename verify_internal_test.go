@@ -1,4 +1,4 @@
-package macbundle
+package darwinbundle
 
 import (
 	"os"
