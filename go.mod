@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/anchore/quill v0.7.2-0.20261002101439-f01a6194b9b9
+	github.com/ebitengine/purego v0.11.1
 	github.com/konoui/lipo v0.10.0
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
@@ -42,7 +43,6 @@ require (
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
-	github.com/ebitengine/purego v0.11.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
 	github.com/github/smimesign v0.2.0 // indirect
