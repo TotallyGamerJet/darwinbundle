@@ -146,11 +146,7 @@ func compareWithActool(t *testing.T, size int) {
 			assetcatalog.AttrScale:      1,
 		},
 	})
-	w, err := c.Build()
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := w.Bytes()
+	data, err := c.Bytes()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,11 +253,7 @@ func TestAssetutilReadsOurRendition(t *testing.T) {
 			assetcatalog.AttrScale:      1,
 		},
 	})
-	w, err := c.Build()
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := w.Bytes()
+	data, err := c.Bytes()
 	if err != nil {
 		t.Fatal(err)
 	}

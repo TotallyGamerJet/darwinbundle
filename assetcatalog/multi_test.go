@@ -52,11 +52,7 @@ func TestAssetutilDistinguishesRenditions(t *testing.T) {
 		})
 	}
 
-	w, err := c.Build()
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := w.Bytes()
+	data, err := c.Bytes()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,11 +131,7 @@ func TestTheIconSetDescriptorIsRecognised(t *testing.T) {
 		})
 	}
 
-	w, err := c.Build()
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := w.Bytes()
+	data, err := c.Bytes()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,12 +170,12 @@ func TestTheIconSetDescriptorIsRecognised(t *testing.T) {
 func TestAnEmptyIconSetIsRefused(t *testing.T) {
 	c := &assetcatalog.Catalog{}
 	c.AddIconSet(assetcatalog.IconSet{Name: "AppIcon"})
-	if _, err := c.Build(); err == nil {
+	if _, err := c.Bytes(); err == nil {
 		t.Error("an icon set listing no sizes was accepted")
 	}
 	c = &assetcatalog.Catalog{}
 	c.AddIconSet(assetcatalog.IconSet{Sizes: []assetcatalog.IconSize{{Points: 16, Index: 1}}})
-	if _, err := c.Build(); err == nil {
+	if _, err := c.Bytes(); err == nil {
 		t.Error("an icon set with no name was accepted")
 	}
 }

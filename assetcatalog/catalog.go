@@ -36,6 +36,8 @@ package assetcatalog
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
+	"slices"
 
 	"github.com/TotallyGamerJet/macbundle/bom"
 )
@@ -86,16 +88,23 @@ const (
 	AttrIdentifier Attribute = 17 // kCRThemeIdentifierName
 )
 
-// DefaultKeyFormat is the attribute order actool writes for a macOS catalog.
+// defaultKeyFormat is the attribute order actool writes for a macOS catalog.
 //
 // The order is load-bearing rather than cosmetic: a rendition's key is just a
 // sequence of 16-bit values, and which value means what is decided entirely by
 // this list. Two catalogs with the same renditions and different key formats
 // describe different images.
-var DefaultKeyFormat = []Attribute{
+var defaultKeyFormat = [...]Attribute{
 	AttrAppearance, AttrLocale, AttrElement, AttrPart, AttrSize,
 	AttrIdentifier, AttrDimension2, AttrLayer, AttrScale,
 }
+
+// DefaultKeyFormat returns the attribute order actool writes for a macOS
+// catalog, and the one a Catalog uses when its KeyFormat is empty.
+//
+// It returns a copy: the order is what gives every rendition key its meaning,
+// so it is not something a caller should be able to edit in place.
+func DefaultKeyFormat() []Attribute { return slices.Clone(defaultKeyFormat[:]) }
 
 // Key is one rendition's address: a value for each attribute in the catalog's
 // key format.
@@ -111,7 +120,7 @@ type Facet struct {
 // Catalog is a set of facets and renditions being assembled.
 type Catalog struct {
 	// KeyFormat is the attribute order every rendition key is written in.
-	// Empty means DefaultKeyFormat.
+	// Empty means DefaultKeyFormat().
 	KeyFormat []Attribute
 
 	// Creator is recorded in the header and shown by assetutil as the
@@ -130,13 +139,32 @@ func (c *Catalog) AddFacet(f Facet) {
 
 func (c *Catalog) keyFormat() []Attribute {
 	if len(c.KeyFormat) == 0 {
-		return DefaultKeyFormat
+		return defaultKeyFormat[:]
 	}
 	return c.KeyFormat
 }
 
-// Build lays the catalog out as a BOM container ready to be written.
-func (c *Catalog) Build() (*bom.Writer, error) {
+// Bytes encodes the catalog as the contents of an Assets.car file.
+func (c *Catalog) Bytes() ([]byte, error) {
+	w, err := c.container()
+	if err != nil {
+		return nil, err
+	}
+	return w.Bytes()
+}
+
+// WriteTo writes the catalog as the contents of an Assets.car file. It
+// implements io.WriterTo.
+func (c *Catalog) WriteTo(out io.Writer) (int64, error) {
+	w, err := c.container()
+	if err != nil {
+		return 0, err
+	}
+	return w.WriteTo(out)
+}
+
+// container lays the catalog out as a BOM container ready to be written.
+func (c *Catalog) container() (*bom.Writer, error) {
 	w := bom.NewWriter()
 	format := c.keyFormat()
 

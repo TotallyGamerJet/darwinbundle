@@ -1,11 +1,13 @@
 package assetcatalog_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/TotallyGamerJet/macbundle/assetcatalog"
@@ -14,13 +16,9 @@ import (
 
 func build(t *testing.T, c *assetcatalog.Catalog) []byte {
 	t.Helper()
-	w, err := c.Build()
+	data, err := c.Bytes()
 	if err != nil {
-		t.Fatalf("Build: %v", err)
-	}
-	data, err := w.Bytes()
-	if err != nil {
-		t.Fatalf("writing: %v", err)
+		t.Fatal(err)
 	}
 	return data
 }
@@ -68,7 +66,7 @@ func TestCatalogHasTheVariablesCoreUIExpects(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := 12 + 4*len(assetcatalog.DefaultKeyFormat); len(kf) != want {
+	if want := 12 + 4*len(assetcatalog.DefaultKeyFormat()); len(kf) != want {
 		t.Errorf("KEYFORMAT is %d bytes, want %d", len(kf), want)
 	}
 	if string(kf[:4]) != "tmfk" {
@@ -87,10 +85,44 @@ func TestFacetEncodingIsDeterministic(t *testing.T) {
 	}
 }
 
+func TestWriteToWritesWhatBytesReturns(t *testing.T) {
+	var buf bytes.Buffer
+	n, err := sample().WriteTo(&buf)
+	if err != nil {
+		t.Fatalf("WriteTo: %v", err)
+	}
+	want := build(t, sample())
+	if !bytes.Equal(buf.Bytes(), want) {
+		t.Error("WriteTo and Bytes produced different files")
+	}
+	if n != int64(len(want)) {
+		t.Errorf("WriteTo reported %d bytes, wrote %d", n, len(want))
+	}
+}
+
+// The key format is what gives a rendition key its meaning, so the default is
+// handed out as a copy. A caller that edits what it was given must not change
+// what every later catalog is written with.
+func TestDefaultKeyFormatCannotBeEditedInPlace(t *testing.T) {
+	first := assetcatalog.DefaultKeyFormat()
+	want := append([]assetcatalog.Attribute(nil), first...)
+	for i := range first {
+		first[i] = 0
+	}
+	if got := assetcatalog.DefaultKeyFormat(); !slices.Equal(got, want) {
+		t.Errorf("editing the returned slice changed the default: got %v, want %v", got, want)
+	}
+	// And the catalog still writes the original order.
+	before := build(t, sample())
+	if after := build(t, sample()); !bytes.Equal(before, after) {
+		t.Error("a catalog changed after the returned default was edited")
+	}
+}
+
 func TestAFacetNeedsAName(t *testing.T) {
 	c := &assetcatalog.Catalog{}
 	c.AddFacet(assetcatalog.Facet{Key: assetcatalog.Key{assetcatalog.AttrPart: 1}})
-	if _, err := c.Build(); err == nil {
+	if _, err := c.Bytes(); err == nil {
 		t.Error("a facet with no name was accepted")
 	}
 }
@@ -145,9 +177,9 @@ func TestAssetutilReadsWhatWeWrote(t *testing.T) {
 	if !ok {
 		t.Fatalf("assetutil reports no key format: %v", header)
 	}
-	if len(format) != len(assetcatalog.DefaultKeyFormat) {
+	if len(format) != len(assetcatalog.DefaultKeyFormat()) {
 		t.Errorf("assetutil reports %d key-format entries, want %d",
-			len(format), len(assetcatalog.DefaultKeyFormat))
+			len(format), len(assetcatalog.DefaultKeyFormat()))
 	}
 	if len(format) > 0 && format[0] != "kCRThemeAppearanceName" {
 		t.Errorf("the key format starts with %v, want kCRThemeAppearanceName", format[0])
