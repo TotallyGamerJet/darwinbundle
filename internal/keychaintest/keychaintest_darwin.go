@@ -9,6 +9,18 @@
 // killed part-way leaves a dangling entry, and that is a decision a developer
 // should make rather than have made for them. CI makes it by setting
 // MACBUNDLE_TEST_KEYCHAIN=1.
+//
+// # Concurrency
+//
+// go test runs packages in parallel, and more than one of this module's uses a
+// keychain. They would each read the search list, add their own, and write it
+// back, so one's cleanup could restore a list still naming the other's deleted
+// keychain, or remove a keychain the other is mid-test against. Setup therefore
+// takes a lock that spans processes, and holds it until Close: the keychain
+// tests of different packages run one after another, not at once.
+//
+// A run killed outright leaves its keychain on the list and its directory in the
+// temp directory. The next Setup removes list entries that no longer exist.
 package keychaintest
 
 import (
@@ -20,11 +32,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
 	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"software.sslmate.com/src/go-pkcs12"
@@ -46,6 +61,7 @@ type Env struct {
 	dir      string
 	keychain string
 	original []string
+	lock     *os.File
 }
 
 // Enabled reports whether the environment asks for a throwaway keychain.
@@ -54,17 +70,25 @@ func Enabled() bool { return os.Getenv("MACBUNDLE_TEST_KEYCHAIN") == "1" }
 // Setup creates the keychain, imports two identities, and puts it first on the
 // user's search list. Call Close when finished, whatever happened in between.
 func Setup() (env *Env, err error) {
-	dir, err := os.MkdirTemp("", "macbundle-keychain-")
+	lock, err := acquireLock()
 	if err != nil {
 		return nil, err
 	}
+	dir, err := os.MkdirTemp("", "macbundle-keychain-")
+	if err != nil {
+		return nil, errors.Join(err, releaseLock(lock))
+	}
+	// A name unique to this run, so that even a keychain left behind by one that
+	// was killed cannot make a search for these identities ambiguous.
+	prefix := "macbundle keychain test " + randomHex(3)
 	env = &Env{
 		dir:      dir,
+		lock:     lock,
 		keychain: filepath.Join(dir, "test.keychain-db"),
-		Prefix:   "macbundle keychain test",
+		Prefix:   prefix,
 		Names: [2]string{
-			"macbundle keychain test one (" + Team + ")",
-			"macbundle keychain test two (" + Team + ")",
+			prefix + " one (" + Team + ")",
+			prefix + " two (" + Team + ")",
 		},
 	}
 	defer func() {
@@ -90,7 +114,7 @@ func Setup() (env *Env, err error) {
 		if err != nil {
 			return env, err
 		}
-		file := filepath.Join(dir, strings.Fields(name)[3]+".p12")
+		file := filepath.Join(dir, strings.Fields(name)[4]+".p12")
 		if err := os.WriteFile(file, p12, 0o600); err != nil {
 			return env, err
 		}
@@ -110,6 +134,15 @@ func Setup() (env *Env, err error) {
 	if err != nil {
 		return env, err
 	}
+	// A previous run that was killed leaves its keychain on the list, pointing at
+	// a directory that is gone. Carrying it forward would keep it there for good.
+	env.original = slices.DeleteFunc(env.original, func(path string) bool {
+		if !strings.Contains(path, "macbundle-keychain-") {
+			return false
+		}
+		_, statErr := os.Stat(path)
+		return errors.Is(statErr, fs.ErrNotExist)
+	})
 	// Ahead of the login keychain so the test identities are found first, and
 	// the login keychain stays on the list so nothing else breaks.
 	if err := security(append([]string{"list-keychains", "-d", "user", "-s", env.keychain}, env.original...)...); err != nil {
@@ -130,7 +163,31 @@ func (e *Env) Close() error {
 		errs = append(errs, security("delete-keychain", e.keychain))
 	}
 	errs = append(errs, os.RemoveAll(e.dir))
+	// Last, so that nothing above overlaps with another process's Setup.
+	if e.lock != nil {
+		errs = append(errs, releaseLock(e.lock))
+	}
 	return errors.Join(errs...)
+}
+
+// acquireLock takes an exclusive lock that other processes' calls wait on. It
+// is advisory and held on an open file, so the kernel drops it if the process
+// dies, which is what makes a crashed run unable to wedge the next.
+func acquireLock() (*os.File, error) {
+	f, err := os.OpenFile(filepath.Join(os.TempDir(), "macbundle-keychain-tests.lock"), os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("keychaintest: opening the lock: %w", err)
+	}
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+		return nil, errors.Join(fmt.Errorf("keychaintest: taking the lock: %w", err), f.Close())
+	}
+	return f, nil
+}
+
+func releaseLock(f *os.File) error {
+	// Closing releases the lock; the explicit unlock first makes the intent
+	// plain and reports a failure that Close alone would not.
+	return errors.Join(syscall.Flock(int(f.Fd()), syscall.LOCK_UN), f.Close())
 }
 
 // identityP12 generates a self-signed code-signing identity as a PKCS#12 file.

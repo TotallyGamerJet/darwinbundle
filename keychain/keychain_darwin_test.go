@@ -42,8 +42,9 @@ func TestFindMatchesAPartialName(t *testing.T) {
 	if testEnv == nil {
 		t.Skip("needs the throwaway keychain, which holds a name unique to this test")
 	}
-	// "one" is unique to the first identity, and is not a prefix of its name.
-	s, err := Find("test one")
+	// Part of the name, from the middle of it: this run's unique prefix and the
+	// word that tells the two identities apart.
+	s, err := Find(testEnv.Prefix + " one")
 	if err != nil {
 		t.Fatalf("Find: %v", err)
 	}
