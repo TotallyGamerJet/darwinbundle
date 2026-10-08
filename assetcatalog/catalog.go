@@ -27,6 +27,14 @@
 // and hand what this package wrote to assetutil. Those tests skip where the
 // tools are absent, so elsewhere only the structural and round-trip checks run.
 //
+// # Reproducibility
+//
+// The same catalog built by the same Go toolchain is byte-for-byte identical:
+// nothing in the output depends on the clock, the host, or map iteration order.
+// Compression is the standard library's gzip, though, and its output is allowed
+// to change between Go releases, so two toolchains can write different bytes
+// for the same artwork. Both decode to the same pixels.
+//
 // Nothing in a catalog's structure tells you the pixels are right. A catalog
 // can parse, list every rendition at the right size and scale, and still draw
 // noise; the tests therefore also take renditions apart and compare their
@@ -181,6 +189,11 @@ func (c *Catalog) container() (*bom.Writer, error) {
 		if f.Name == "" {
 			return nil, fmt.Errorf("assetcatalog: a facet needs a name")
 		}
+		for a := range f.Key {
+			if !slices.Contains(attributeOrder, a) {
+				return nil, fmt.Errorf("assetcatalog: facet %q uses attribute %d, which cannot be encoded", f.Name, a)
+			}
+		}
 		facets = append(facets, bom.TreeEntry{
 			Key:   []byte(f.Name),
 			Value: encodeFacetValue(f.Key),
@@ -191,25 +204,37 @@ func (c *Catalog) container() (*bom.Writer, error) {
 	}
 
 	renditions := make([]bom.TreeEntry, 0, len(c.renditions)+len(c.iconSets))
+	owner := make(map[string]string) // encoded key -> the name that claimed it
+	add := func(name string, key Key, csi []byte) error {
+		if err := checkKey(format, key); err != nil {
+			return fmt.Errorf("assetcatalog: %q: %w", name, err)
+		}
+		k := encodeRenditionKey(format, key)
+		if first, taken := owner[string(k)]; taken {
+			return fmt.Errorf("assetcatalog: %q and %q have the same key, so one would overwrite the other",
+				first, name)
+		}
+		owner[string(k)] = name
+		renditions = append(renditions, bom.TreeEntry{Key: k, Value: csi})
+		return nil
+	}
 	for _, s := range c.iconSets {
 		csi, err := encodeIconSetCSI(s)
 		if err != nil {
 			return nil, err
 		}
-		renditions = append(renditions, bom.TreeEntry{
-			Key:   encodeRenditionKey(format, s.Key),
-			Value: csi,
-		})
+		if err := add(s.Name, s.Key, csi); err != nil {
+			return nil, err
+		}
 	}
 	for _, r := range c.renditions {
 		csi, err := encodeCSI(r)
 		if err != nil {
 			return nil, err
 		}
-		renditions = append(renditions, bom.TreeEntry{
-			Key:   encodeRenditionKey(format, r.Key),
-			Value: csi,
-		})
+		if err := add(r.Name, r.Key, csi); err != nil {
+			return nil, err
+		}
 	}
 	if err := w.AddTree(varRenditions, bom.DefaultBlockSize, renditions); err != nil {
 		return nil, err
@@ -288,6 +313,19 @@ func encodeFacetValue(key Key) []byte {
 		b = binary.LittleEndian.AppendUint16(b, v)
 	}
 	return b
+}
+
+// checkKey reports an attribute in key that the key format has no slot for.
+// encodeRenditionKey writes only the attributes the format lists, so without
+// this the value would be dropped and the image stored at a different address
+// from the one asked for.
+func checkKey(format []Attribute, key Key) error {
+	for a := range key {
+		if !slices.Contains(format, a) {
+			return fmt.Errorf("the key sets attribute %d, which is not in the catalog's key format", a)
+		}
+	}
+	return nil
 }
 
 // encodeRenditionKey writes one 16-bit value per attribute in the key format,

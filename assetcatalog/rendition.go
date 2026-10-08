@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	"math"
 )
 
 // A rendition is one image in the catalog: the CSI blob a rendition key maps
@@ -146,6 +147,14 @@ func encodeCSI(r Rendition) ([]byte, error) {
 	w, h := b.Dx(), b.Dy()
 	if w <= 0 || h <= 0 {
 		return nil, fmt.Errorf("assetcatalog: rendition %q is %dx%d", r.Name, w, h)
+	}
+
+	// The payload's length is recorded in 32 bits. This is checked before the
+	// image is touched: converting one this large would take a long time and
+	// then fail anyway.
+	if uint64(w)*uint64(h)*4 > math.MaxUint32 {
+		return nil, fmt.Errorf("assetcatalog: rendition %q is %dx%d, too large to record: "+
+			"its pixel data would not fit in 32 bits", r.Name, w, h)
 	}
 
 	pixels := premultipliedBGRA(r.Image)
