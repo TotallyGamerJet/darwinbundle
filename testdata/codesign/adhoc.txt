@@ -1,0 +1,10 @@
+Executable=/tmp/example
+Identifier=probe-arm64
+Format=Mach-O thin (arm64)
+CodeDirectory v=20500 size=13868 flags=0x2(adhoc) hashes=428+2 location=embedded
+Signature=adhoc
+Info.plist=not bound
+TeamIdentifier=not set
+Runtime Version=12.1.0
+Sealed Resources=none
+Internal requirements count=0 size=12

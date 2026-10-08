@@ -1,0 +1,12 @@
+Executable=/tmp/example
+Identifier=com.example.captured
+Format=Mach-O thin (arm64)
+CodeDirectory v=20500 size=13888 flags=0x10000(runtime) hashes=428+2 location=embedded
+Signature size=860
+Authority=macbundle test identity (TEAM123456)
+Signed Time=Oct 8, 2026 at 10:35:11 AM
+Info.plist=not bound
+TeamIdentifier=TEAM123456
+Runtime Version=12.1.0
+Sealed Resources=none
+Internal requirements count=1 size=108
