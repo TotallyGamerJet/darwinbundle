@@ -62,6 +62,11 @@ type Env struct {
 	keychain string
 	original []string
 	lock     *os.File
+
+	// listChanged records that the search list was rewritten, so Close puts it
+	// back. It is not the same as original being non-nil: a machine with an empty
+	// list has nothing to restore it to, and still needs the entry removed.
+	listChanged bool
 }
 
 // Enabled reports whether the environment asks for a throwaway keychain.
@@ -148,6 +153,7 @@ func Setup() (env *Env, err error) {
 	if err := security(append([]string{"list-keychains", "-d", "user", "-s", env.keychain}, env.original...)...); err != nil {
 		return env, err
 	}
+	env.listChanged = true
 	return env, nil
 }
 
@@ -156,7 +162,7 @@ func Setup() (env *Env, err error) {
 // about.
 func (e *Env) Close() error {
 	var errs []error
-	if e.original != nil {
+	if e.listChanged {
 		errs = append(errs, security(append([]string{"list-keychains", "-d", "user", "-s"}, e.original...)...))
 	}
 	if _, err := os.Stat(e.keychain); err == nil {
