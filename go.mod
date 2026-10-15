@@ -6,7 +6,7 @@ require (
 	github.com/anchore/quill v0.7.2-0.20261002101439-f01a6194b9b9
 	github.com/ebitengine/purego v0.11.1
 	github.com/konoui/lipo v0.10.0
-	software.sslmate.com/src/go-pkcs12 v0.7.3
+	software.sslmate.com/src/go-pkcs12 v0.7.4
 )
 
 require (
